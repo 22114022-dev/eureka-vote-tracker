@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Logo from './Logo';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -9,7 +10,6 @@ import {
   Moon,
   Sun,
   ExternalLink,
-  Sprout,
   PanelLeftClose,
 } from 'lucide-react';
 
@@ -88,8 +88,8 @@ export default function Sidebar({
     >
       {/* Brand */}
       <div className="px-5 pt-6 pb-5 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] flex items-center justify-center shadow-lg shadow-fuchsia-500/20 shrink-0">
-          <Sprout className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 shrink-0">
+          <Logo className="w-full h-full" />
         </div>
         <div className="min-w-0">
           <div className={`text-base font-extrabold leading-tight ${isDark ? 'text-white' : 'text-[#0F172A]'}`}>

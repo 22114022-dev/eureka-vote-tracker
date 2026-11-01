@@ -1,4 +1,5 @@
 import React from 'react';
+import Logo from './Logo';
 import { RefreshCw, Moon, Sun, Sliders, ExternalLink, Activity, PanelLeftOpen } from 'lucide-react';
 
 export default function Header({
@@ -28,7 +29,7 @@ export default function Header({
         <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-stretch sm:gap-3 lg:flex-row lg:items-center">
           
           {/* Left Title and Badges */}
-          <div className="flex items-center gap-3 min-w-0 shrink-0 sm:shrink">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0 sm:shrink">
             {sidebarCollapsed && (
               <button
                 type="button"
@@ -44,12 +45,12 @@ export default function Header({
                 <PanelLeftOpen className="w-5 h-5" />
               </button>
             )}
-            <div className={`${hideWithSidebar} max-sm:hidden w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] flex items-center justify-center shadow-md shadow-[#9333ea]/20 shrink-0 text-white font-bold text-base sm:text-xl select-none`}>
-              🌾
+            <div className={`${hideWithSidebar} w-7 h-7 sm:w-11 sm:h-11 shrink-0 select-none`}>
+              <Logo className="w-full h-full" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm sm:text-lg xl:text-xl font-extrabold tracking-tight truncate sm:whitespace-normal">
+                <h1 className="text-[13px] sm:text-lg xl:text-xl font-extrabold tracking-tight truncate sm:whitespace-normal">
                   <span className="sm:hidden whitespace-nowrap">Euréka 2026 · KHNN</span>
                   <span className="hidden sm:inline">
                     <span className={hideWithSidebar}>Euréka 2026 — </span>Bảng Xếp Hạng Bình Chọn Khoa Học Nông Nghiệp
