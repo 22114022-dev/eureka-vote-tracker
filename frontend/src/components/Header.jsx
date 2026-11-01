@@ -19,7 +19,7 @@ export default function Header({
   const hideWithSidebar = sidebarCollapsed ? '' : 'lg:hidden';
 
   return (
-    <header className={`relative lg:sticky lg:top-0 z-40 border-b backdrop-blur-xl transition-colors duration-200 ${
+    <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-colors duration-200 ${
       isDark
         ? 'bg-slate-900/80 border-slate-800 text-white shadow-lg shadow-black/20'
         : 'bg-white/75 border-[#E2E8F0] text-[#0F172A] shadow-sm'
