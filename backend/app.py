@@ -26,55 +26,24 @@ def health():
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    payload = storage.get_dashboard_payload()
+    payload = storage.get_dashboard_payload(request.args.get("team"))
     payload["nextScrapeIn"] = get_next_run_seconds()
     return jsonify(payload)
 
 @app.route("/api/history", methods=["GET"])
 def get_history():
     return jsonify({
-        "history": storage.get_history()
+        "history": storage.get_history(request.args.get("team"))
     })
 
 @app.route("/api/refresh", methods=["POST"])
 def manual_refresh():
     """Trigger an immediate concurrent fetch across all 3 pages."""
-    payload = storage.sync_live_data()
+    storage.sync_live_data()
+    payload = storage.get_dashboard_payload(request.args.get("team"))
     payload["nextScrapeIn"] = 60
     return jsonify({
         "message": "Đã cập nhật dữ liệu trực tiếp từ cổng chính thức Euréka 2026!",
-        "data": payload
-    })
-
-@app.route("/api/simulate-vote", methods=["POST"])
-def simulate_vote():
-    """Simulation/Testing endpoint."""
-    data = request.get_json() or {}
-    code = data.get("code", "KHNN2026-002")
-    amount = int(data.get("amount", 1))
-
-    updated_proj = storage.bump_vote(code, amount)
-    if updated_proj:
-        payload = storage.get_dashboard_payload()
-        return jsonify({
-            "success": True,
-            "message": f"Đã tăng +{amount} phiếu cho đề tài {code}!",
-            "project": updated_proj,
-            "dashboard": payload
-        })
-    else:
-        return jsonify({
-            "success": False,
-            "error": f"Không tìm thấy đề tài mã {code}"
-        }), 404
-
-@app.route("/api/reset-data", methods=["POST"])
-def reset_data():
-    """Reset back to the exact initial seed dataset."""
-    payload = storage.reset_to_seed()
-    return jsonify({
-        "success": True,
-        "message": "Đã khôi phục dữ liệu gốc thành công!",
         "data": payload
     })
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import Logo from './Logo';
-import { RefreshCw, Moon, Sun, Sliders, ExternalLink, Activity, PanelLeftOpen } from 'lucide-react';
+import { RefreshCw, Moon, Sun, Flag, ExternalLink, Activity, PanelLeftOpen } from 'lucide-react';
 
 export default function Header({
   countdown,
@@ -8,7 +8,8 @@ export default function Header({
   onRefresh,
   theme,
   onToggleTheme,
-  onOpenSimulate,
+  onOpenTeamPicker,
+  teamCode,
   gapTracker,
   lastUpdated,
   fetchDurationMs,
@@ -77,7 +78,7 @@ export default function Header({
               </div>
               <p className={`hidden sm:flex text-xs ${isDark ? 'text-slate-400' : 'text-[#475569]'} mt-0.5 items-center gap-2 flex-wrap`}>
                 <span>
-                  Giám sát Top 5 & Đề tài trọng điểm: <strong className={isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}>KHNN2026-002</strong>
+                  Giám sát Top 5 & Đề tài trọng điểm: <strong className={isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}>{teamCode || 'KHNN2026-002'}</strong>
                 </span>
                 <a
                   href="https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN"
@@ -142,16 +143,16 @@ export default function Header({
 
             {/* Simulation Trigger */}
             <button
-              onClick={onOpenSimulate}
+              onClick={onOpenTeamPicker}
               className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-semibold transition-all active:scale-95 border ${
                 isDark
                   ? 'bg-[#9333ea]/15 hover:bg-[#9333ea]/25 text-[#e879f9] border-[#9333ea]/40'
                   : 'bg-teal-50 hover:bg-teal-100/80 text-[#9333ea] border-teal-200'
               }`}
-              title="Mô phỏng thay đổi số phiếu để thử nghiệm cơ chế cảnh báo"
+              title="Chọn đề tài làm đội nhà để theo dõi"
             >
-              <Sliders className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Thử nghiệm</span>
+              <Flag className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Chọn đội nhà</span>
             </button>
 
             {/* Theme Toggle Button */}

@@ -6,7 +6,9 @@ import VoteShareDonut from './components/VoteShareDonut';
 import Top5BarChart from './components/Top5BarChart';
 import HeadToHeadRadar from './components/HeadToHeadRadar';
 import LeaderboardTable from './components/LeaderboardTable';
-import SimulateModal from './components/SimulateModal';
+import TeamPickerModal from './components/TeamPickerModal';
+
+const DEFAULT_TEAM = 'KHNN2026-002';
 import { AlertTriangle, Bell, BellOff, Sprout } from 'lucide-react';
 
 export default function App() {
@@ -23,7 +25,15 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [countdown, setCountdown] = useState(60);
-  const [isSimulateOpen, setIsSimulateOpen] = useState(false);
+  const [isTeamPickerOpen, setIsTeamPickerOpen] = useState(false);
+  // Home team is chosen per viewer and remembered in this browser
+  const [team, setTeam] = useState(() => {
+    try {
+      return localStorage.getItem('eureka_team') || DEFAULT_TEAM;
+    } catch {
+      return DEFAULT_TEAM;
+    }
+  });
   const [soundAlertEnabled, setSoundAlertEnabled] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -51,7 +61,8 @@ export default function App() {
   const fetchDashboard = useCallback(async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const endpoint = isManual ? '/api/refresh' : '/api/leaderboard';
+      const query = `?team=${encodeURIComponent(team)}`;
+      const endpoint = (isManual ? '/api/refresh' : '/api/leaderboard') + query;
       const method = isManual ? 'POST' : 'GET';
       const res = await fetch(endpoint, { method });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -74,7 +85,7 @@ export default function App() {
         setTimeout(() => setIsRefreshing(false), 500);
       }
     }
-  }, [playAlertSound]);
+  }, [playAlertSound, team]);
 
   // Initial load
   useEffect(() => {
@@ -85,11 +96,11 @@ export default function App() {
   const lastUpdated = dashboardData?.lastUpdated;
   useEffect(() => {
     if (!lastUpdated) return;
-    fetch('/api/history')
+    fetch(`/api/history?team=${encodeURIComponent(team)}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
       .then((json) => setHistory(json.history || []))
       .catch((err) => console.error('History fetch error:', err));
-  }, [lastUpdated]);
+  }, [lastUpdated, team]);
 
   // Expose the sticky header height so the pinned KPI row can sit right below it
   useEffect(() => {
@@ -140,6 +151,15 @@ export default function App() {
     return () => clearInterval(timer);
   }, [fetchDashboard]);
 
+  const handleSelectTeam = (code) => {
+    setTeam(code);
+    try {
+      localStorage.setItem('eureka_team', code);
+    } catch {
+      // storage unavailable: the choice only lasts for this visit
+    }
+  };
+
   // Toggle theme
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -154,43 +174,6 @@ export default function App() {
     localStorage.setItem('eureka_sidebar', next ? 'collapsed' : 'open');
   };
 
-  // Simulate vote bump
-  const handleSimulateVote = async (code, amount) => {
-    try {
-      const res = await fetch('/api/simulate-vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, amount })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setDashboardData(data.dashboard);
-        if (data.dashboard?.gapTracker?.isClose) {
-          playAlertSound();
-        }
-      }
-      return data;
-    } catch (e) {
-      console.error("Simulation error:", e);
-      return { success: false, error: e.message };
-    }
-  };
-
-  // Reset to initial seed data
-  const handleResetData = async () => {
-    try {
-      const res = await fetch('/api/reset-data', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setDashboardData(data.data);
-      }
-      return data;
-    } catch (e) {
-      console.error("Reset error:", e);
-      return { success: false };
-    }
-  };
-
   const isDark = theme === 'dark';
 
   return (
@@ -203,7 +186,7 @@ export default function App() {
         onRefresh={() => fetchDashboard(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
-        onOpenSimulate={() => setIsSimulateOpen(true)}
+        onOpenTeamPicker={() => setIsTeamPickerOpen(true)}
         ready={!!dashboardData}
         collapsed={sidebarCollapsed}
         onCollapse={toggleSidebar}
@@ -245,7 +228,8 @@ export default function App() {
         onRefresh={() => fetchDashboard(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
-        onOpenSimulate={() => setIsSimulateOpen(true)}
+        onOpenTeamPicker={() => setIsTeamPickerOpen(true)}
+        teamCode={dashboardData?.targetProject?.code || team}
         gapTracker={dashboardData?.gapTracker}
         lastUpdated={dashboardData?.lastUpdated}
         fetchDurationMs={dashboardData?.fetchDurationMs}
@@ -312,6 +296,7 @@ export default function App() {
                   theme={theme}
                   lastUpdated={dashboardData?.lastUpdated}
                   history={history}
+                  teamCode={dashboardData?.targetProject?.code}
                 />
               </div>
 
@@ -344,14 +329,14 @@ export default function App() {
 
       </main>
 
-      {/* Simulation Modal */}
-      <SimulateModal
-        isOpen={isSimulateOpen}
-        onClose={() => setIsSimulateOpen(false)}
-        targetProject={dashboardData?.targetProject}
-        runnerUp={dashboardData?.headToHead?.rank2}
-        onSimulateVote={handleSimulateVote}
-        onResetData={handleResetData}
+      {/* Home team picker */}
+      <TeamPickerModal
+        isOpen={isTeamPickerOpen}
+        onClose={() => setIsTeamPickerOpen(false)}
+        projects={dashboardData?.projects}
+        team={dashboardData?.targetProject?.code || team}
+        defaultTeam={DEFAULT_TEAM}
+        onSelect={handleSelectTeam}
         theme={theme}
       />
 

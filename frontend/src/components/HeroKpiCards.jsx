@@ -27,7 +27,7 @@ export default function HeroKpiCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-5 mb-6">
       
-      {/* CARD 1: Vị trí hiện tại của KHNN2026-002 */}
+      {/* CARD 1: Vị trí hiện tại của đội nhà */}
       <div className={`kpi-purple relative overflow-hidden rounded-2xl p-5 xl:p-6 border transition-all duration-300 shadow-sm flex flex-col justify-between ${
         isDark
           ? 'bg-gradient-to-br from-slate-900 via-slate-900/95 to-teal-950/40 border-[#9333ea]/60 hover:border-[#e879f9]'
@@ -75,14 +75,14 @@ export default function HeroKpiCards({
             <span className={`w-2 h-2 rounded-full inline-block animate-pulse ${
               isDark ? 'bg-teal-400' : 'bg-[#9333ea]'
             }`}></span>
-            Đang dẫn đầu toàn ngành
+            {rank === 1 ? 'Đang dẫn đầu toàn ngành' : `Đang xếp hạng #${rank} toàn ngành`}
           </span>
           <span className={`font-mono text-[12px] px-2 py-0.5 rounded border ${
             isDark
               ? 'bg-slate-800 border-slate-700 text-slate-300'
               : 'bg-slate-100 border-[#E2E8F0] text-[#475569]'
           }`}>
-            Mã: KHNN2026-002
+            Mã: {targetProject?.code || 'KHNN2026-002'}
           </span>
         </div>
       </div>
@@ -282,7 +282,7 @@ export default function HeroKpiCards({
         <div className={`mt-4 pt-3 border-t ${isDark ? 'border-slate-800/80' : 'border-[#E2E8F0]'}`}>
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className={isDark ? 'text-slate-400' : 'text-[#64748B]'}>
-              Tỷ trọng KHNN-002:
+              Tỷ trọng {(targetProject?.code || 'KHNN2026-002').replace('2026-', '-')}:
             </span>
             <span className={`font-bold font-mono ${isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}`}>
               {overview?.targetVoteShare || '10.5'}%

@@ -46,7 +46,7 @@ const formatUpdated = (iso) => {
 
 const CHART_LABELS = { horizontal: 'Thanh ngang', vertical: 'Cột đứng', area: 'Miền' };
 
-export default function Top5BarChart({ top5, theme, lastUpdated, history }) {
+export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCode }) {
   const isDark = theme === 'dark';
   // 'horizontal' (Thanh ngang), 'vertical' (Cột đứng) or 'area' (Miền); phones default to columns
   const [chartType, setChartType] = useState(() =>
@@ -189,7 +189,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history }) {
               `Lượt bình chọn: ${project.votes.toLocaleString('vi-VN')} phiếu${changeText}`,
               ...wrapText(`Nhóm tác giả: ${project.authors}`),
               `Trang: ${project.page}`,
-              project.isTarget ? '⭐ ĐỀ TÀI CỦA BẠN (DẪN ĐẦU)' : `Chênh lệch với Top 1: -${project.diffTop1} phiếu`
+              project.isTarget ? '⭐ ĐỀ TÀI CỦA BẠN' : `Chênh lệch với Top 1: -${project.diffTop1} phiếu`
             ];
           },
         },
@@ -498,7 +498,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history }) {
                 : 'bg-teal-50 border-teal-200'
             }`}>
               <span className={`w-2.5 h-2.5 rounded-full ${isDark ? 'bg-[#e879f9]' : 'bg-[#9333ea]'}`}></span>
-              <span className={`font-bold ${isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}`}>KHNN2026-002 (Đội nhà)</span>
+              <span className={`font-bold ${isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}`}>{teamCode || 'KHNN2026-002'} (Đội nhà)</span>
             </div>
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border ${
               isDark

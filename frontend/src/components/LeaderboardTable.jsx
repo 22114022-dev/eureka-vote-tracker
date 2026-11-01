@@ -225,7 +225,7 @@ export default function LeaderboardTable({
       <div className={`md:hidden divide-y ${isDark ? 'divide-slate-800/60' : 'divide-[#E2E8F0]'}`}>
         {paginatedProjects.length > 0 ? (
           paginatedProjects.map((p) => {
-            const isTarget = p.isTarget || p.code === 'KHNN2026-002';
+            const isTarget = p.isTarget;
             const medal = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : null;
             return (
               <div
@@ -385,7 +385,7 @@ export default function LeaderboardTable({
           <tbody className={`divide-y ${isDark ? 'divide-slate-800/60' : 'divide-[#E2E8F0]'}`}>
             {paginatedProjects.length > 0 ? (
               paginatedProjects.map((p) => {
-                const isTarget = p.isTarget || p.code === 'KHNN2026-002';
+                const isTarget = p.isTarget;
                 const isTop1 = p.rank === 1;
                 const isTop2 = p.rank === 2;
                 const isTop3 = p.rank === 3;

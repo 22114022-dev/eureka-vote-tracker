@@ -6,7 +6,7 @@ import {
   BarChart3,
   Table2,
   RefreshCw,
-  Sliders,
+  Flag,
   Moon,
   Sun,
   ExternalLink,
@@ -26,7 +26,7 @@ export default function Sidebar({
   onRefresh,
   theme,
   onToggleTheme,
-  onOpenSimulate,
+  onOpenTeamPicker,
   ready,
   collapsed,
   onCollapse,
@@ -163,9 +163,9 @@ export default function Sidebar({
           <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span>Làm mới</span>
         </button>
-        <button type="button" onClick={onOpenSimulate} className={ghostBtn}>
-          <Sliders className="w-4 h-4" />
-          <span>Thử nghiệm</span>
+        <button type="button" onClick={onOpenTeamPicker} className={ghostBtn}>
+          <Flag className="w-4 h-4" />
+          <span>Chọn đội nhà</span>
         </button>
         <button type="button" onClick={onToggleTheme} className={ghostBtn}>
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

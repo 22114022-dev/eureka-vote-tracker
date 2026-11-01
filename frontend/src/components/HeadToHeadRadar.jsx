@@ -84,7 +84,7 @@ export default function HeadToHeadRadar({
                       ? 'text-teal-400 bg-[#9333ea]/30 border-[#9333ea]/50'
                       : 'text-[#9333ea] bg-teal-50 border-teal-200'
                   }`}>
-                    Đội nhà
+                    {rank1?.isTarget ? 'Đội nhà' : 'Dẫn đầu'}
                   </span>
                 </div>
                 <div className={`font-mono text-sm xl:text-base font-black ${
@@ -151,7 +151,7 @@ export default function HeadToHeadRadar({
             <div
               className="h-full bg-gradient-to-r from-[#a855f7] to-[#ec4899] transition-all duration-700 relative flex items-center justify-end pr-2"
               style={{ width: `${p1Share}%` }}
-              title={`KHNN2026-002: ${p1Share}%`}
+              title={`${rank1?.code}: ${p1Share}%`}
             >
               <span className="text-[12px] font-black text-white drop-shadow-sm">{p1Share}%</span>
             </div>

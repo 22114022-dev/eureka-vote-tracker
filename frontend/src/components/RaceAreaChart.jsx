@@ -52,7 +52,7 @@ export default function RaceAreaChart({ history, theme, embedded = false }) {
         pointHoverBackgroundColor: '#ec4899',
       },
       {
-        label: 'Đối thủ hạng 2',
+        label: 'Đối thủ gần nhất',
         data: points.map((p) => p.runnerUpVotes),
         borderColor: '#2dd4bf',
         backgroundColor: areaFill('45, 212, 191', 0.3),
@@ -133,7 +133,7 @@ export default function RaceAreaChart({ history, theme, embedded = false }) {
           <div>
             <h2 className="text-base xl:text-lg font-bold tracking-tight">Diễn Biến Cuộc Đua</h2>
             <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
-              Phần tô tím là khoảng cách với đối thủ hạng 2
+              Phần tô tím là khoảng cách với đối thủ gần nhất
             </p>
           </div>
         </div>}
@@ -145,7 +145,7 @@ export default function RaceAreaChart({ history, theme, embedded = false }) {
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#2dd4bf]"></span>
-            Đối thủ hạng 2
+            {last?.runnerUpCode || 'Đối thủ gần nhất'}
           </span>
           {points.length >= 2 && (
             <span

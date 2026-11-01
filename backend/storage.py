@@ -16,6 +16,8 @@ SNAPSHOTS_FILE = os.path.join(DATA_DIR, "votes_snapshots.json")
 SNAPSHOT_MAX = 1500
 SNAPSHOT_HEARTBEAT_S = 600
 
+DEFAULT_TEAM = "KHNN2026-002"
+
 # Servers such as Render run in UTC; all stored times use Vietnam time (UTC+7)
 VN_TZ = timezone(timedelta(hours=7))
 
@@ -38,8 +40,6 @@ class Storage:
         self.snapshots = []
         self._snapshots_dirty = False
         self._using_seed = False
-        # Simulated votes layered over live data: {code: extra_votes}
-        self.sim_offsets = {}
         self.last_updated = _now().isoformat()
         self.last_fetch_duration_ms = 0
         self.last_scrape_status = "Chưa đồng bộ"
@@ -202,11 +202,6 @@ class Storage:
             self.last_scrape_status = status
             return self.get_dashboard_payload()
 
-        # Keep simulated votes on top of live data so a sync doesn't undo them
-        # (which showed up as a bogus negative velocity on the next cycle)
-        for p in fetched_projects:
-            p["votes"] += self.sim_offsets.get(p["code"], 0)
-
         # Sort descending by votes
         fetched_projects.sort(key=lambda x: x["votes"], reverse=True)
 
@@ -229,12 +224,42 @@ class Storage:
         self._save_state()
         return self.get_dashboard_payload()
 
-    def get_history(self):
-        return list(self.history)
+    def resolve_team(self, team):
+        """Valid project code for the requested home team, else the default."""
+        codes = {p["code"] for p in self.projects}
+        team = (team or "").strip().upper()
+        return team if team in codes else DEFAULT_TEAM
 
-    def get_dashboard_payload(self):
-        # Sort descending by votes
-        sorted_projects = sorted(self.projects, key=lambda x: x["votes"], reverse=True)
+    def get_history(self, team=None):
+        """Race history of `team` vs its nearest competitor, built from per-project snapshots."""
+        team = self.resolve_team(team)
+        points = []
+        for snap in self.snapshots[-100:]:
+            votes = snap["votes"]
+            if team not in votes:
+                continue
+            others = [(v, c) for c, v in votes.items() if c != team]
+            if not others:
+                continue
+            opp_votes, opp_code = max(others)
+            when = _parse_iso(snap["iso"]).astimezone(VN_TZ)
+            points.append({
+                "timestamp": when.strftime("%H:%M:%S"),
+                "iso": snap["iso"],
+                "targetVotes": votes[team],
+                "targetCode": team,
+                "runnerUpVotes": opp_votes,
+                "runnerUpCode": opp_code,
+                "gap": votes[team] - opp_votes,
+            })
+        return points
+
+    def get_dashboard_payload(self, team=None):
+        team = self.resolve_team(team)
+        # Work on copies: the home team differs per viewer, shared state must stay untouched
+        sorted_projects = sorted((dict(p) for p in self.projects), key=lambda x: x["votes"], reverse=True)
+        for p in sorted_projects:
+            p["isTarget"] = (p["code"] == team)
 
         top1_votes = sorted_projects[0]["votes"] if sorted_projects else 0
         for i, p in enumerate(sorted_projects, start=1):
@@ -294,7 +319,11 @@ class Storage:
                 "isClose": is_close,
                 "isAhead": is_ahead,
                 "nearestCompetitor": nearest,
-                "statusBadge": "Đang bám đuổi rất sát!" if is_close else "Khoảng cách an toàn",
+                "statusBadge": (
+                    "Đang bám đuổi rất sát!" if is_close
+                    else "Khoảng cách an toàn" if is_ahead
+                    else "Đang xếp sau Top 1"
+                ),
                 "alertLevel": "danger" if abs(gap) <= 25 else ("warning" if is_close else "normal")
             },
             "velocity": {
@@ -322,35 +351,5 @@ class Storage:
             "fetchDurationMs": self.last_fetch_duration_ms,
             "status": self.last_scrape_status
         }
-
-    def bump_vote(self, code, amount=1):
-        target = next((p for p in self.projects if p["code"] == code), None)
-        if target:
-            target["votes"] += amount
-            self.sim_offsets[code] = self.sim_offsets.get(code, 0) + amount
-            target["changeLastCycle"] = amount
-            self.last_updated = _now().isoformat()
-            self._record_snapshot()
-            self._record_votes_snapshot()
-            self._save_state()
-            return target
-        return None
-
-    def reset_to_seed(self):
-        """Drop simulated votes and history, then re-sync from the live API.
-        Seed data is only a fallback if the API is unreachable; it never feeds
-        snapshots, otherwise the next sync would report the whole live-vs-seed
-        difference as growth."""
-        self.sim_offsets = {}
-        self.projects = get_initial_dataset()
-        self._using_seed = True
-        self.history = []
-        self.snapshots = []
-        self._snapshots_dirty = True
-        self.last_updated = _now().isoformat()
-        self.last_scrape_status = "Đã khôi phục dữ liệu gốc"
-        self.sync_live_data()
-        self._save_state()
-        return self.get_dashboard_payload()
 
 storage = Storage()
