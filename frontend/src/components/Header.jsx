@@ -28,7 +28,7 @@ export default function Header({
         <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-stretch sm:gap-3 lg:flex-row lg:items-center">
           
           {/* Left Title and Badges */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 shrink-0 sm:shrink">
             {sidebarCollapsed && (
               <button
                 type="button"
@@ -44,13 +44,13 @@ export default function Header({
                 <PanelLeftOpen className="w-5 h-5" />
               </button>
             )}
-            <div className={`${hideWithSidebar} w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] flex items-center justify-center shadow-md shadow-[#9333ea]/20 shrink-0 text-white font-bold text-base sm:text-xl select-none`}>
+            <div className={`${hideWithSidebar} max-sm:hidden w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] flex items-center justify-center shadow-md shadow-[#9333ea]/20 shrink-0 text-white font-bold text-base sm:text-xl select-none`}>
               🌾
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-sm sm:text-lg xl:text-xl font-extrabold tracking-tight truncate sm:whitespace-normal">
-                  <span className="sm:hidden">Euréka 2026 · KHNN</span>
+                  <span className="sm:hidden whitespace-nowrap">Euréka 2026 · KHNN</span>
                   <span className="hidden sm:inline">
                     <span className={hideWithSidebar}>Euréka 2026 — </span>Bảng Xếp Hạng Bình Chọn Khoa Học Nông Nghiệp
                   </span>
@@ -111,7 +111,7 @@ export default function Header({
                 }`}></span>
               </span>
               <span className="hidden sm:inline">Quét định kỳ 60s</span>
-              <span className={`font-mono font-bold px-2 py-0.5 rounded-md border ${
+              <span className={`font-mono font-bold tabular-nums text-center min-w-[3ch] px-2 py-0.5 rounded-md border ${
                 isDark
                   ? 'text-[#e879f9] bg-teal-500/10 border-teal-500/20'
                   : 'text-[#9333ea] bg-teal-50 border-teal-200'
