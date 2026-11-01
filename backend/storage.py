@@ -25,6 +25,7 @@ class Storage:
         self.projects = []
         self.history = []
         self.snapshots = []
+        self._snapshots_dirty = False
         self.last_updated = datetime.now().isoformat()
         self.last_fetch_duration_ms = 0
         self.last_scrape_status = "Chưa đồng bộ"
@@ -118,7 +119,11 @@ class Storage:
             try:
                 self.redis_client.set("eureka_khnn:projects", json.dumps(self.projects, ensure_ascii=False))
                 self.redis_client.set("eureka_khnn:history", json.dumps(self.history[-100:], ensure_ascii=False))
-                self.redis_client.set("eureka_khnn:snapshots", json.dumps(self.snapshots, ensure_ascii=False))
+                # Snapshots are the largest value; only push them when they changed
+                # to keep Redis bandwidth low on free tiers.
+                if self._snapshots_dirty:
+                    self.redis_client.set("eureka_khnn:snapshots", json.dumps(self.snapshots, ensure_ascii=False))
+                    self._snapshots_dirty = False
                 self.redis_client.set("eureka_khnn:last_updated", self.last_updated)
             except Exception as e:
                 print(f"[Storage] Redis write error: {e}")
@@ -156,6 +161,7 @@ class Storage:
                 return
         self.snapshots.append({"iso": now.isoformat(), "votes": votes})
         self.snapshots = self.snapshots[-SNAPSHOT_MAX:]
+        self._snapshots_dirty = True
 
     def _votes_at(self, seconds_ago):
         """Votes per project as of `seconds_ago`, or the oldest snapshot if history is shorter."""

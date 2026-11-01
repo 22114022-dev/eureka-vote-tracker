@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: eureka-vote-tracker
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt && npm --prefix frontend ci && npm --prefix frontend run build
+    startCommand: python backend/app.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: NODE_VERSION
+        value: 20.18.0
+      # Upstash Redis URL (rediss://...), set it in the Render dashboard
+      - key: REDIS_URL
+        sync: false
