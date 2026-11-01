@@ -26,6 +26,7 @@ class Storage:
         self.history = []
         self.snapshots = []
         self._snapshots_dirty = False
+        self._using_seed = False
         self.last_updated = datetime.now().isoformat()
         self.last_fetch_duration_ms = 0
         self.last_scrape_status = "Chưa đồng bộ"
@@ -93,8 +94,10 @@ class Storage:
 
         # 3. Fallback to Initial Dataset if empty
         if not self.projects:
+            # Seed data is only a placeholder until the first live sync:
+            # no history point and no vote deltas should be derived from it.
             self.projects = get_initial_dataset()
-            self._record_snapshot(initial=True)
+            self._using_seed = True
             self._save_state()
 
     def _save_state(self):
@@ -190,7 +193,8 @@ class Storage:
         fetched_projects.sort(key=lambda x: x["votes"], reverse=True)
 
         # Previous votes map to compute changeLastCycle
-        prev_map = {p["code"]: p["votes"] for p in self.projects}
+        prev_map = {} if self._using_seed else {p["code"]: p["votes"] for p in self.projects}
+        self._using_seed = False
         top1_votes = fetched_projects[0]["votes"] if fetched_projects else 0
 
         for i, p in enumerate(fetched_projects, start=1):
