@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import HeroKpiCards from './components/HeroKpiCards';
-import RaceAreaChart from './components/RaceAreaChart';
 import VoteShareDonut from './components/VoteShareDonut';
 import Top5BarChart from './components/Top5BarChart';
 import HeadToHeadRadar from './components/HeadToHeadRadar';
@@ -304,15 +303,6 @@ export default function App() {
             </section>
 
             {/* Race trend + vote share */}
-            <section id="dien-bien" className="grid grid-cols-1 xl:grid-cols-12 gap-5 xl:gap-6 mb-6 items-stretch scroll-anchor">
-              <div className="xl:col-span-8">
-                <RaceAreaChart history={history} theme={theme} />
-              </div>
-              <div className="xl:col-span-4">
-                <VoteShareDonut projects={dashboardData?.projects} theme={theme} />
-              </div>
-            </section>
-
             {/* 2. Main Visualization Section */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 xl:gap-6 mb-6 items-stretch">
               {/* Left Column: Horizontal Bar Chart - Top 5 */}
@@ -321,11 +311,12 @@ export default function App() {
                   top5={dashboardData?.top5}
                   theme={theme}
                   lastUpdated={dashboardData?.lastUpdated}
+                  history={history}
                 />
               </div>
 
               {/* Right Column: Head-to-Head Battle & Chasing Pack */}
-              <div id="so-keo" className="xl:col-span-5 flex flex-col scroll-anchor">
+              <div id="so-keo" className="hidden md:flex xl:col-span-5 flex-col scroll-anchor">
                 <HeadToHeadRadar
                   headToHead={dashboardData?.headToHead}
                   chasingPack={dashboardData?.chasingPack}
@@ -334,6 +325,11 @@ export default function App() {
                 />
               </div>
             </div>
+
+            {/* Vote share */}
+            <section id="dien-bien" className="mb-6 scroll-anchor">
+              <VoteShareDonut projects={dashboardData?.projects} theme={theme} />
+            </section>
 
             {/* 3. Detailed Leaderboard Table */}
             <section id="bang-xep-hang" className="scroll-anchor">

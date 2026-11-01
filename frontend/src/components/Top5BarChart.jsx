@@ -9,8 +9,9 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { Award, BarChart2, BarChart3, Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Award, BarChart2, BarChart3, AreaChart, Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import RaceAreaChart from './RaceAreaChart';
 
 ChartJS.register(
   CategoryScale,
@@ -37,10 +38,20 @@ const wrapText = (text, max = 36) => {
   return lines;
 };
 
-export default function Top5BarChart({ top5, theme, lastUpdated }) {
+const formatUpdated = (iso) => {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return 'Thời gian thực';
+  return d.toLocaleString('vi-VN', { hour12: false });
+};
+
+const CHART_LABELS = { horizontal: 'Thanh ngang', vertical: 'Cột đứng', area: 'Miền' };
+
+export default function Top5BarChart({ top5, theme, lastUpdated, history }) {
   const isDark = theme === 'dark';
-  // 'horizontal' (Thanh ngang) or 'vertical' (Cột đứng)
-  const [chartType, setChartType] = useState('horizontal');
+  // 'horizontal' (Thanh ngang), 'vertical' (Cột đứng) or 'area' (Miền); phones default to columns
+  const [chartType, setChartType] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'vertical' : 'horizontal'
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [exportNotice, setExportNotice] = useState(null); // { type: 'success' | 'error', message: string }
 
@@ -322,7 +333,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
 
       setExportNotice({
         type: 'success',
-        message: `Đã xuất biểu đồ ${chartType === 'horizontal' ? 'thanh ngang' : 'cột đứng'} (PNG) thành công!`,
+        message: `Đã xuất biểu đồ ${CHART_LABELS[chartType].toLowerCase()} (PNG) thành công!`,
       });
       setTimeout(() => setExportNotice(null), 4000);
     } catch (err) {
@@ -375,7 +386,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
               Biểu Đồ Top 5 Bình Chọn
             </h2>
             <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
-              {chartType === 'horizontal' ? 'Biểu đồ thanh ngang' : 'Biểu đồ cột đứng'}
+              Biểu đồ {CHART_LABELS[chartType].toLowerCase()}
             </p>
           </div>
         </div>
@@ -421,6 +432,24 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
               <BarChart2 className="w-3.5 h-3.5" />
               <span>Cột đứng</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setChartType('area')}
+              title="Diễn biến cuộc đua theo thời gian (biểu đồ Miền)"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                chartType === 'area'
+                  ? isDark
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'bg-white text-[#9333ea] shadow-sm font-bold'
+                  : isDark
+                  ? 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <AreaChart className="w-3.5 h-3.5" />
+              <span>Miền</span>
+            </button>
           </div>
 
           {/* Export Button placed right next to Chart Type Selector */}
@@ -457,6 +486,9 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
           isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-[#0F172A]'
         }`}
       >
+        {chartType === 'area' ? (
+          <RaceAreaChart history={history} theme={theme} embedded />
+        ) : (
         <div>
           {/* Legend pills */}
           <div className="flex items-center gap-2.5 text-xs pb-3 shrink-0 flex-wrap">
@@ -483,13 +515,14 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
             <Bar key={chartType} data={chartData} options={options} plugins={[valueLabelPlugin]} />
           </div>
         </div>
+        )}
 
         {/* Small discreet update timestamp footer */}
         <div className={`pt-2.5 mt-2 flex items-center justify-between text-[12px] ${
           isDark ? 'text-slate-500' : 'text-slate-400'
         }`}>
           <span>Giải thưởng Euréka 2026 • Top 5 Bình chọn</span>
-          <span>Cập nhật: {lastUpdated || 'Thời gian thực'}</span>
+          <span>Cập nhật: {formatUpdated(lastUpdated)}</span>
         </div>
       </div>
     </div>

@@ -25,10 +25,10 @@ const areaFill = (rgb, topAlpha) => ({ chart }) => {
   return gradient;
 };
 
-export default function RaceAreaChart({ history, theme }) {
+export default function RaceAreaChart({ history, theme, embedded = false }) {
   const isDark = theme === 'dark';
   const points = history || [];
-  const cardClass = `p-5 xl:p-6 rounded-2xl border transition-all duration-300 h-full flex flex-col ${
+  const cardClass = embedded ? 'flex flex-col' : `p-5 xl:p-6 rounded-2xl border transition-all duration-300 h-full flex flex-col ${
     isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2E8F0]'
   }`;
 
@@ -37,7 +37,7 @@ export default function RaceAreaChart({ history, theme }) {
   const gapChange = first && last ? last.gap - first.gap : 0;
 
   const data = {
-    labels: points.map((p) => p.timestamp.slice(0, 5)),
+    labels: points.map((p) => p.timestamp),
     datasets: [
       {
         label: last?.targetCode || 'KHNN2026-002',
@@ -99,8 +99,10 @@ export default function RaceAreaChart({ history, theme }) {
         ticks: {
           color: isDark ? '#a3a8d3' : '#64748b',
           font: { family: FONT, size: 11 },
-          maxTicksLimit: 8,
+          maxTicksLimit: 4,
           maxRotation: 0,
+          autoSkipPadding: 6,
+          align: 'inner',
         },
       },
       y: {
@@ -117,10 +119,10 @@ export default function RaceAreaChart({ history, theme }) {
 
   return (
     <div className={cardClass}>
-      <div className={`flex flex-wrap items-center justify-between gap-3 pb-3.5 mb-3 border-b ${
-        isDark ? 'border-slate-800/80' : 'border-[#E2E8F0]'
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${
+        embedded ? 'pb-3' : `pb-3.5 mb-3 border-b ${isDark ? 'border-slate-800/80' : 'border-[#E2E8F0]'}`
       }`}>
-        <div className="flex items-center gap-2.5">
+        {!embedded && <div className="flex items-center gap-2.5">
           <div className={`p-2 rounded-xl border shrink-0 ${
             isDark
               ? 'bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/20'
@@ -134,9 +136,9 @@ export default function RaceAreaChart({ history, theme }) {
               Phần tô tím là khoảng cách với đối thủ hạng 2
             </p>
           </div>
-        </div>
+        </div>}
 
-        <div className="flex items-center gap-4 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#ec4899]"></span>
             {last?.targetCode || 'KHNN2026-002'}
@@ -160,7 +162,7 @@ export default function RaceAreaChart({ history, theme }) {
       </div>
 
       {points.length >= 2 ? (
-        <div className="flex-1 min-h-[280px] xl:min-h-[320px]">
+        <div className={embedded ? 'h-[300px] sm:h-[360px] xl:h-[400px] 2xl:h-[430px] w-full py-1' : 'flex-1 min-h-[280px] xl:min-h-[320px]'}>
           <Line data={data} options={options} />
         </div>
       ) : (

@@ -242,7 +242,7 @@ export default function HeroKpiCards({
       </div>
 
       {/* CARD 4: Tổng quan toàn bảng */}
-      <div className={`relative overflow-hidden rounded-2xl p-5 xl:p-6 border transition-all duration-300 shadow-sm flex flex-col justify-between ${
+      <div className={`relative overflow-hidden rounded-2xl p-5 xl:p-6 border transition-all duration-300 shadow-sm hidden md:flex flex-col justify-between ${
         isDark ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-[#E2E8F0] hover:border-slate-300'
       }`}>
         <div>
