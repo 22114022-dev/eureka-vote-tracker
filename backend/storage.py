@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from initial_data import get_initial_dataset
 from fetcher import fetch_all_pages_concurrently
 
@@ -16,6 +16,17 @@ SNAPSHOTS_FILE = os.path.join(DATA_DIR, "votes_snapshots.json")
 SNAPSHOT_MAX = 1500
 SNAPSHOT_HEARTBEAT_S = 600
 
+# Servers such as Render run in UTC; all stored times use Vietnam time (UTC+7)
+VN_TZ = timezone(timedelta(hours=7))
+
+def _now():
+    return datetime.now(VN_TZ)
+
+def _parse_iso(value):
+    dt = datetime.fromisoformat(value)
+    # Snapshots saved before timezones were added are naive local time
+    return dt if dt.tzinfo else dt.replace(tzinfo=VN_TZ)
+
 os.makedirs(DATA_DIR, exist_ok=True)
 
 class Storage:
@@ -29,7 +40,7 @@ class Storage:
         self._using_seed = False
         # Simulated votes layered over live data: {code: extra_votes}
         self.sim_offsets = {}
-        self.last_updated = datetime.now().isoformat()
+        self.last_updated = _now().isoformat()
         self.last_fetch_duration_ms = 0
         self.last_scrape_status = "Chưa đồng bộ"
         self._load_state()
@@ -75,7 +86,7 @@ class Storage:
                 with open(CACHE_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self.projects = data.get("projects", [])
-                    self.last_updated = data.get("last_updated", datetime.now().isoformat())
+                    self.last_updated = data.get("last_updated", _now().isoformat())
                     self.last_scrape_status = data.get("last_scrape_status", "Sẵn sàng")
             except Exception as e:
                 print(f"[Storage] Local cache read error: {e}")
@@ -134,14 +145,14 @@ class Storage:
                 print(f"[Storage] Redis write error: {e}")
 
     def _record_snapshot(self, initial=False):
-        now_str = datetime.now().strftime("%H:%M:%S")
+        now_str = _now().strftime("%H:%M:%S")
         target = next((p for p in self.projects if p.get("isTarget")), None)
         runner_up = next((p for p in self.projects if p.get("rank") == 2), None)
         rank3 = next((p for p in self.projects if p.get("rank") == 3), None)
 
         snapshot = {
             "timestamp": now_str,
-            "iso": datetime.now().isoformat(),
+            "iso": _now().isoformat(),
             "targetVotes": target["votes"] if target else 0,
             "targetCode": target["code"] if target else "KHNN2026-002",
             "runnerUpVotes": runner_up["votes"] if runner_up else 0,
@@ -158,10 +169,10 @@ class Storage:
 
     def _record_votes_snapshot(self):
         votes = {p["code"]: p["votes"] for p in self.projects}
-        now = datetime.now()
+        now = _now()
         if self.snapshots:
             last = self.snapshots[-1]
-            age = (now - datetime.fromisoformat(last["iso"])).total_seconds()
+            age = (now - _parse_iso(last["iso"])).total_seconds()
             if last["votes"] == votes and age < SNAPSHOT_HEARTBEAT_S:
                 return
         self.snapshots.append({"iso": now.isoformat(), "votes": votes})
@@ -172,9 +183,9 @@ class Storage:
         """Votes per project as of `seconds_ago`, or the oldest snapshot if history is shorter."""
         if not self.snapshots:
             return {}
-        cutoff = datetime.now() - timedelta(seconds=seconds_ago)
+        cutoff = _now() - timedelta(seconds=seconds_ago)
         for s in reversed(self.snapshots):
-            if datetime.fromisoformat(s["iso"]) <= cutoff:
+            if _parse_iso(s["iso"]) <= cutoff:
                 return s["votes"]
         return self.snapshots[0]["votes"]
 
@@ -211,7 +222,7 @@ class Storage:
             p["changeLastCycle"] = p["votes"] - old_votes
 
         self.projects = fetched_projects
-        self.last_updated = datetime.now().isoformat()
+        self.last_updated = _now().isoformat()
         self.last_scrape_status = f"Đồng bộ trực tiếp thành công ({len(fetched_projects)} đề tài trong {duration_ms}ms)"
         self._record_snapshot()
         self._record_votes_snapshot()
@@ -318,7 +329,7 @@ class Storage:
             target["votes"] += amount
             self.sim_offsets[code] = self.sim_offsets.get(code, 0) + amount
             target["changeLastCycle"] = amount
-            self.last_updated = datetime.now().isoformat()
+            self.last_updated = _now().isoformat()
             self._record_snapshot()
             self._record_votes_snapshot()
             self._save_state()
@@ -336,7 +347,7 @@ class Storage:
         self.history = []
         self.snapshots = []
         self._snapshots_dirty = True
-        self.last_updated = datetime.now().isoformat()
+        self.last_updated = _now().isoformat()
         self.last_scrape_status = "Đã khôi phục dữ liệu gốc"
         self.sync_live_data()
         self._save_state()

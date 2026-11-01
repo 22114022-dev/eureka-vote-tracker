@@ -99,9 +99,9 @@ export default function RaceAreaChart({ history, theme, embedded = false }) {
         ticks: {
           color: isDark ? '#a3a8d3' : '#64748b',
           font: { family: FONT, size: 11 },
-          maxTicksLimit: 4,
+          maxTicksLimit: typeof window !== 'undefined' && window.innerWidth < 640 ? 3 : 6,
           maxRotation: 0,
-          autoSkipPadding: 6,
+          autoSkipPadding: 16,
           align: 'inner',
         },
       },
