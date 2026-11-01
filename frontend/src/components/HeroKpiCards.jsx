@@ -226,7 +226,7 @@ export default function HeroKpiCards({
             <TrendingUp className="w-3.5 h-3.5 shrink-0" />
             <span>
               1 giờ qua: <strong>{(velocity?.velocity1h || 0) >= 0 ? '+' : ''}{velocity?.velocity1h || 0} phiếu</strong>
-              {' · '}chu kỳ gần nhất: <strong>+{velocity?.lastCycle || 0}</strong>
+              {' · '}chu kỳ gần nhất: <strong>{(velocity?.lastCycle || 0) > 0 ? '+' : ''}{velocity?.lastCycle || 0}</strong>
             </span>
           </div>
         </div>

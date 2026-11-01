@@ -27,6 +27,8 @@ class Storage:
         self.snapshots = []
         self._snapshots_dirty = False
         self._using_seed = False
+        # Simulated votes layered over live data: {code: extra_votes}
+        self.sim_offsets = {}
         self.last_updated = datetime.now().isoformat()
         self.last_fetch_duration_ms = 0
         self.last_scrape_status = "Chưa đồng bộ"
@@ -189,6 +191,11 @@ class Storage:
             self.last_scrape_status = status
             return self.get_dashboard_payload()
 
+        # Keep simulated votes on top of live data so a sync doesn't undo them
+        # (which showed up as a bogus negative velocity on the next cycle)
+        for p in fetched_projects:
+            p["votes"] += self.sim_offsets.get(p["code"], 0)
+
         # Sort descending by votes
         fetched_projects.sort(key=lambda x: x["votes"], reverse=True)
 
@@ -309,6 +316,7 @@ class Storage:
         target = next((p for p in self.projects if p["code"] == code), None)
         if target:
             target["votes"] += amount
+            self.sim_offsets[code] = self.sim_offsets.get(code, 0) + amount
             target["changeLastCycle"] = amount
             self.last_updated = datetime.now().isoformat()
             self._record_snapshot()
@@ -318,13 +326,19 @@ class Storage:
         return None
 
     def reset_to_seed(self):
+        """Drop simulated votes and history, then re-sync from the live API.
+        Seed data is only a fallback if the API is unreachable; it never feeds
+        snapshots, otherwise the next sync would report the whole live-vs-seed
+        difference as growth."""
+        self.sim_offsets = {}
         self.projects = get_initial_dataset()
+        self._using_seed = True
         self.history = []
         self.snapshots = []
-        self._record_snapshot(initial=True)
-        self._record_votes_snapshot()
+        self._snapshots_dirty = True
         self.last_updated = datetime.now().isoformat()
         self.last_scrape_status = "Đã khôi phục dữ liệu gốc"
+        self.sync_live_data()
         self._save_state()
         return self.get_dashboard_payload()
 
