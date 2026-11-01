@@ -21,6 +21,22 @@ ChartJS.register(
   Legend
 );
 
+// Chart.js tooltips don't wrap text, so long titles/authors must be split into lines
+const wrapText = (text, max = 36) => {
+  const lines = [];
+  let line = '';
+  String(text || '').split(/\s+/).forEach((word) => {
+    if (line && (line + ' ' + word).length > max) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = line ? `${line} ${word}` : word;
+    }
+  });
+  if (line) lines.push(line);
+  return lines;
+};
+
 export default function Top5BarChart({ top5, theme, lastUpdated }) {
   const isDark = theme === 'dark';
   // 'horizontal' (Thanh ngang) or 'vertical' (Cột đứng)
@@ -102,11 +118,14 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
       meta.data.forEach((bar, i) => {
         const p = displayItems[i];
         const change = p.changeLastCycle > 0 ? p.changeLastCycle : 0;
-        ctx.font = "800 13px 'Be Vietnam Pro', sans-serif";
+        ctx.font = `800 ${chart.width < 500 ? 11 : 13}px 'Be Vietnam Pro', sans-serif`;
         ctx.fillStyle = p.isTarget
           ? (isDark ? '#e879f9' : '#9333ea')
           : (isDark ? '#f1f5f9' : '#0f172a');
-        ctx.fillText(`${p.votes.toLocaleString('vi-VN')} (+${change})`, bar.x, bar.y - 6);
+        const text = change > 0
+          ? `${p.votes.toLocaleString('vi-VN')} (+${change})`
+          : p.votes.toLocaleString('vi-VN');
+        ctx.fillText(text, bar.x, bar.y - 6);
       });
       ctx.restore();
     },
@@ -116,7 +135,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
     indexAxis: isHorizontal ? 'y' : 'x',
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { top: isHorizontal ? 0 : 26 } },
+    layout: { padding: { top: isHorizontal ? 0 : 26, right: isHorizontal ? 0 : 14 } },
     animation: {
       duration: 500,
       easing: 'easeOutQuart'
@@ -147,7 +166,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
           title: (items) => {
             const index = items[0].dataIndex;
             const item = displayItems[index];
-            return `#${item.rank} - ${item.code}: ${item.title}`;
+            return wrapText(`#${item.rank} - ${item.code}: ${item.title}`);
           },
           label: (item) => {
             const index = item.dataIndex;
@@ -157,7 +176,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
               : '';
             return [
               `Lượt bình chọn: ${project.votes.toLocaleString('vi-VN')} phiếu${changeText}`,
-              `Nhóm tác giả: ${project.authors}`,
+              ...wrapText(`Nhóm tác giả: ${project.authors}`),
               `Trang: ${project.page}`,
               project.isTarget ? '⭐ ĐỀ TÀI CỦA BẠN (DẪN ĐẦU)' : `Chênh lệch với Top 1: -${project.diffTop1} phiếu`
             ];
@@ -202,6 +221,15 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
                 };
               },
               padding: 8,
+              // Narrow chart: keep only the rank and the short code so labels don't eat the bars
+              callback(value) {
+                const p = displayItems[value];
+                if (!p) return '';
+                if (this.chart.width >= 520) {
+                  return `#${p.rank}  ${p.code}${p.isTarget ? ' ⭐ (Đội nhà)' : ''}`;
+                }
+                return `#${p.rank} ${p.code.replace('KHNN2026-', '')}${p.isTarget ? ' ⭐' : ''}`;
+              },
             },
           },
         }
@@ -310,7 +338,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
   };
 
   return (
-    <div className={`p-5 xl:p-6 rounded-2xl border transition-all duration-300 shadow-sm flex flex-col justify-between h-full relative ${
+    <div className={`p-4 sm:p-5 xl:p-6 rounded-2xl border transition-all duration-300 shadow-sm flex flex-col justify-between h-full relative min-w-0 ${
       isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2E8F0]'
     }`}>
       {/* Export notification popup */}
@@ -451,7 +479,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated }) {
           </div>
 
           {/* Chart Canvas Area */}
-          <div className="h-[360px] xl:h-[400px] 2xl:h-[430px] w-full py-1">
+          <div className="h-[300px] sm:h-[360px] xl:h-[400px] 2xl:h-[430px] w-full py-1">
             <Bar key={chartType} data={chartData} options={options} plugins={[valueLabelPlugin]} />
           </div>
         </div>

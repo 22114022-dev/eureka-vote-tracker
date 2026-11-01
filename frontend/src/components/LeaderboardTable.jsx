@@ -116,7 +116,7 @@ export default function LeaderboardTable({
           {/* Title & Count Badge */}
           <div className="flex items-center gap-3">
             <div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <h2 className="text-base sm:text-lg xl:text-xl font-bold tracking-tight">
                   Bảng Xếp Hạng Chi Tiết Toàn Ngành
                 </h2>
@@ -138,7 +138,7 @@ export default function LeaderboardTable({
           <div className="flex flex-wrap items-center gap-2.5 xl:gap-3">
             
             {/* Search Input */}
-            <div className="relative min-w-[220px] sm:w-[280px] xl:w-[320px]">
+            <div className="relative w-full sm:w-[280px] xl:w-[320px]">
               <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${
                 isDark ? 'text-slate-400' : 'text-[#64748B]'
               }`} />
@@ -159,7 +159,7 @@ export default function LeaderboardTable({
             </div>
 
             {/* Filter Tabs */}
-            <div className={`flex rounded-xl p-0.5 border text-xs font-semibold ${
+            <div className={`flex max-w-full overflow-x-auto rounded-xl p-0.5 border text-xs font-semibold ${
               isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-[#E2E8F0]'
             }`}>
               {[
@@ -172,7 +172,7 @@ export default function LeaderboardTable({
                 <button
                   key={tab.id}
                   onClick={() => { setSelectedPage(tab.id); setCurrentPage(1); }}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                  className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
                     selectedPage === tab.id
                       ? 'bg-[#9333ea] text-white shadow-sm font-bold'
                       : isDark
@@ -221,8 +221,86 @@ export default function LeaderboardTable({
         </div>
       </div>
 
+      {/* Mobile cards: the 8-column table is unreadable on a phone */}
+      <div className={`md:hidden divide-y ${isDark ? 'divide-slate-800/60' : 'divide-[#E2E8F0]'}`}>
+        {paginatedProjects.length > 0 ? (
+          paginatedProjects.map((p) => {
+            const isTarget = p.isTarget || p.code === 'KHNN2026-002';
+            const medal = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : null;
+            return (
+              <div
+                key={p.code}
+                className={`p-4 ${
+                  isTarget
+                    ? isDark
+                      ? 'bg-[#9333ea]/15 border-l-4 border-l-[#e879f9]'
+                      : 'bg-teal-50/90 border-l-4 border-l-[#9333ea]'
+                    : ''
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className={`font-mono text-sm font-black ${isDark ? 'text-slate-100' : 'text-[#0F172A]'}`}>
+                      {medal || `#${p.rank}`}
+                    </span>
+                    <span className={`font-mono text-xs font-extrabold ${
+                      isTarget
+                        ? isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'
+                        : isDark ? 'text-slate-300' : 'text-[#475569]'
+                    }`}>
+                      {p.code}
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded-md text-[12px] font-semibold border ${
+                      isDark
+                        ? 'bg-slate-800/80 border-slate-700/60 text-slate-300'
+                        : 'bg-slate-100 border-[#E2E8F0] text-[#475569]'
+                    }`}>
+                      Trang {p.page}
+                    </span>
+                    {isTarget && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-black bg-[#9333ea] text-white">
+                        <Star className="w-2.5 h-2.5 fill-current" />
+                        Đề tài của bạn
+                      </span>
+                    )}
+                  </div>
+                  <span className={`font-mono text-lg font-black shrink-0 ${
+                    isTarget
+                      ? isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'
+                      : isDark ? 'text-slate-100' : 'text-[#0F172A]'
+                  }`}>
+                    {p.votes.toLocaleString('vi-VN')}
+                  </span>
+                </div>
+
+                <p className={`mt-2 text-[13px] leading-snug line-clamp-3 ${
+                  isTarget ? 'font-bold' : ''
+                } ${isDark ? 'text-slate-200' : 'text-[#0F172A]'}`}>
+                  {p.title}
+                </p>
+
+                <div className={`mt-2 flex items-center justify-between gap-3 text-xs font-mono ${
+                  isDark ? 'text-slate-400' : 'text-[#64748B]'
+                }`}>
+                  <span>
+                    {p.diffTop1 === 0 ? 'Top 1' : `Cách Top 1: -${p.diffTop1.toLocaleString('vi-VN')}`}
+                  </span>
+                  <span className={p.change1h > 0 ? (isDark ? 'text-teal-400 font-bold' : 'text-[#9333ea] font-bold') : ''}>
+                    1h: {p.change1h > 0 ? `+${p.change1h}` : '—'}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <p className={`py-10 px-4 text-center text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
+            Không tìm thấy đề tài nào phù hợp với bộ lọc tìm kiếm.
+          </p>
+        )}
+      </div>
+
       {/* Table Container */}
-      <div className="overflow-x-auto w-full">
+      <div className="hidden md:block overflow-x-auto w-full">
         <table className="w-full text-left text-xs border-collapse">
           <thead className={`border-b text-[12px] uppercase tracking-wider font-bold select-none ${
             isDark

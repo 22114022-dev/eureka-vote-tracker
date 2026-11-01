@@ -19,12 +19,12 @@ export default function HeadToHeadRadar({
   const isWarning = Math.abs(gap) < 50;
 
   return (
-    <div className={`p-5 xl:p-6 rounded-2xl border transition-all duration-300 shadow-sm flex flex-col justify-between h-full ${
+    <div className={`p-4 sm:p-5 xl:p-6 rounded-2xl border transition-all duration-300 shadow-sm flex flex-col justify-between h-full min-w-0 ${
       isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2E8F0]'
     }`}>
       {/* Top: Section Header */}
       <div>
-        <div className={`flex items-center justify-between pb-3.5 mb-4 border-b gap-2 ${
+        <div className={`flex flex-wrap items-center justify-between pb-3.5 mb-4 border-b gap-2 ${
           isDark ? 'border-slate-800/80' : 'border-[#E2E8F0]'
         }`}>
           <div className="flex items-center gap-2.5">
@@ -66,9 +66,9 @@ export default function HeadToHeadRadar({
         <div className={`p-4 rounded-xl border mb-5 ${
           isDark ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-[#E2E8F0]'
         }`}>
-          <div className="flex items-center justify-between text-xs mb-2.5">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-between text-xs mb-2.5">
             {/* Rank 1 Side (KHNN2026-002) */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
               <span className={`w-3 h-3 rounded-full ${
                 isDark ? 'bg-[#e879f9] shadow-sm shadow-[#e879f9]/50' : 'bg-[#9333ea]'
               }`}></span>
@@ -96,7 +96,7 @@ export default function HeadToHeadRadar({
             </div>
 
             {/* Center Gap Badge */}
-            <div className={`text-center px-3 py-1.5 rounded-xl border shadow-sm shrink-0 ${
+            <div className={`col-span-2 order-last justify-self-center sm:order-none text-center px-3 py-1.5 rounded-xl border shadow-sm shrink-0 ${
               isDark
                 ? 'bg-slate-900/90 border-slate-700'
                 : 'bg-white border-[#E2E8F0]'
@@ -118,7 +118,7 @@ export default function HeadToHeadRadar({
             </div>
 
             {/* Rank 2 Side (KHNN2026-054) */}
-            <div className="text-right flex items-center gap-2.5 flex-row-reverse">
+            <div className="text-right flex items-center gap-2.5 flex-row-reverse min-w-0">
               <span className="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></span>
               <div>
                 <div className="flex items-center gap-1.5 justify-end">
@@ -164,20 +164,20 @@ export default function HeadToHeadRadar({
             </div>
           </div>
 
-          <div className={`flex justify-between items-center text-[12px] mt-2 ${
+          <div className={`flex flex-wrap justify-between items-center gap-x-2 text-[12px] mt-2 ${
             isDark ? 'text-slate-400' : 'text-[#64748B]'
           }`}>
-            <span className="truncate max-w-[45%]">AI Cây Con (Trang 1)</span>
-            <span className={`font-semibold shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+            <span className="truncate max-w-[48%] sm:max-w-[30%]">AI Cây Con (Trang 1)</span>
+            <span className={`font-semibold order-last w-full text-center mt-1 sm:order-none sm:w-auto sm:mt-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
               Ngưỡng báo động: &lt;50 phiếu
             </span>
-            <span className="truncate max-w-[45%] text-right">Sâm Cau Đen (Trang 3)</span>
+            <span className="truncate max-w-[48%] sm:max-w-[30%] text-right">Sâm Cau Đen (Trang 3)</span>
           </div>
         </div>
 
         {/* Chasing Pack (Ranks #6 - #8) */}
         <div>
-          <div className="flex items-center justify-between mb-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2.5">
             <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
               isDark ? 'text-slate-200' : 'text-[#0F172A]'
             }`}>
