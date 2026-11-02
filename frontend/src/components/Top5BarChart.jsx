@@ -71,13 +71,12 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
   const sortedTop5 = [...top5].sort((a, b) => b.votes - a.votes);
 
   const isHorizontal = chartType === 'horizontal';
-  // For horizontal chart: display rank 1 at the top by reversing items for Chart.js y-axis
-  // For vertical column chart: rank 1 is on the left
-  const displayItems = isHorizontal ? [...sortedTop5].reverse() : [...sortedTop5];
+  // Rank 1 comes first: at the top of the horizontal chart, on the left of the column chart
+  const displayItems = sortedTop5;
 
   const labels = displayItems.map(p => 
     isHorizontal
-      ? `#${p.rank}  ${p.code}${p.isTarget ? ' ⭐ (Đội nhà)' : ''}`
+      ? `#${p.rank}  ${p.code}`
       : [`#${p.rank}`, p.code]
   );
   const dataValues = displayItems.map(p => p.votes);
@@ -116,16 +115,15 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
 
   const maxVote = Math.max(...dataValues, 100);
 
-  // Draws "votes (+change)" above each column
+  // Draws "votes (+change)" above each column, or after each horizontal bar
   const valueLabelPlugin = {
     id: 'valueLabels',
     afterDatasetsDraw(chart) {
-      if (isHorizontal) return;
       const { ctx } = chart;
       const meta = chart.getDatasetMeta(0);
       ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
+      ctx.textAlign = isHorizontal ? 'left' : 'center';
+      ctx.textBaseline = isHorizontal ? 'middle' : 'bottom';
       meta.data.forEach((bar, i) => {
         const p = displayItems[i];
         const change = p.changeLastCycle > 0 ? p.changeLastCycle : 0;
@@ -136,7 +134,8 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
         const text = change > 0
           ? `${p.votes.toLocaleString('vi-VN')} (+${change})`
           : p.votes.toLocaleString('vi-VN');
-        ctx.fillText(text, bar.x, bar.y - 6);
+        if (isHorizontal) ctx.fillText(text, bar.x + 8, bar.y);
+        else ctx.fillText(text, bar.x, bar.y - 6);
       });
       ctx.restore();
     },
@@ -209,7 +208,8 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
               },
               callback: (value) => value.toLocaleString('vi-VN'),
             },
-            suggestedMax: Math.ceil(maxVote * 1.08),
+            // Leave room after the longest bar for its vote label
+            suggestedMax: Math.ceil(maxVote * (typeof window !== 'undefined' && window.innerWidth < 640 ? 1.45 : 1.2)),
           },
           y: {
             grid: {
@@ -231,15 +231,15 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
                   weight: p?.isTarget ? 'bold' : 'normal',
                 };
               },
-              padding: 8,
+              padding: 12,
+              // Left-aligned column of labels; home team stands out by color and bold
+              crossAlign: 'far',
               // Narrow chart: keep only the rank and the short code so labels don't eat the bars
               callback(value) {
                 const p = displayItems[value];
                 if (!p) return '';
-                if (this.chart.width >= 520) {
-                  return `#${p.rank}  ${p.code}${p.isTarget ? ' ⭐ (Đội nhà)' : ''}`;
-                }
-                return `#${p.rank} ${p.code.replace('KHNN2026-', '')}${p.isTarget ? ' ⭐' : ''}`;
+                const code = this.chart.width >= 520 ? p.code : p.code.replace('KHNN2026-', '');
+                return `#${p.rank}  ${code}`;
               },
             },
           },
@@ -487,7 +487,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
         }`}
       >
         {chartType === 'area' ? (
-          <RaceAreaChart history={history} theme={theme} embedded />
+          <RaceAreaChart history={history} top5={top5} theme={theme} embedded />
         ) : (
         <div>
           {/* Legend pills */}

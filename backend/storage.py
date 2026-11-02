@@ -233,6 +233,7 @@ class Storage:
     def get_history(self, team=None):
         """Race history of `team` vs its nearest competitor, built from per-project snapshots."""
         team = self.resolve_team(team)
+        top5_codes = [p["code"] for p in sorted(self.projects, key=lambda x: x["votes"], reverse=True)[:5]]
         points = []
         for snap in self.snapshots[-100:]:
             votes = snap["votes"]
@@ -251,6 +252,7 @@ class Storage:
                 "runnerUpVotes": opp_votes,
                 "runnerUpCode": opp_code,
                 "gap": votes[team] - opp_votes,
+                "top5": {c: votes[c] for c in top5_codes if c in votes},
             })
         return points
 

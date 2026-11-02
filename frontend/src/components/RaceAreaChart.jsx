@@ -25,7 +25,13 @@ const areaFill = (rgb, topAlpha) => ({ chart }) => {
   return gradient;
 };
 
-export default function RaceAreaChart({ history, theme, embedded = false }) {
+// Same colors as the vote share donut
+const TARGET_COLOR = '#ec4899';
+const SERIES_COLORS = ['#a855f7', '#6366f1', '#3b82f6', '#2dd4bf', '#22d3ee'];
+
+const hexToRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
+
+export default function RaceAreaChart({ history, top5, theme, embedded = false }) {
   const isDark = theme === 'dark';
   const points = history || [];
   const cardClass = embedded ? 'flex flex-col' : `p-5 xl:p-6 rounded-2xl border transition-all duration-300 h-full flex flex-col ${
@@ -36,34 +42,27 @@ export default function RaceAreaChart({ history, theme, embedded = false }) {
   const last = points[points.length - 1];
   const gapChange = first && last ? last.gap - first.gap : 0;
 
+  // One band per Top 5 project, ordered by rank like the bar charts
+  let colorIndex = 0;
+  const series = [...(top5 || [])]
+    .sort((a, b) => b.votes - a.votes)
+    .map((p) => ({ ...p, color: p.isTarget ? TARGET_COLOR : SERIES_COLORS[colorIndex++] }));
+
   const data = {
     labels: points.map((p) => p.timestamp),
-    datasets: [
-      {
-        label: last?.targetCode || 'KHNN2026-002',
-        data: points.map((p) => p.targetVotes),
-        borderColor: '#ec4899',
-        backgroundColor: areaFill('168, 85, 247', 0.45),
-        fill: '+1',
-        borderWidth: 2.5,
-        tension: 0.35,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#ec4899',
-      },
-      {
-        label: 'Đối thủ gần nhất',
-        data: points.map((p) => p.runnerUpVotes),
-        borderColor: '#2dd4bf',
-        backgroundColor: areaFill('45, 212, 191', 0.3),
-        fill: 'start',
-        borderWidth: 2.5,
-        tension: 0.35,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#2dd4bf',
-      },
-    ],
+    datasets: series.map((p, i) => ({
+      label: p.code,
+      data: points.map((point) => point.top5?.[p.code] ?? null),
+      borderColor: p.color,
+      backgroundColor: areaFill(hexToRgb(p.color), 0.32),
+      fill: i < series.length - 1 ? '+1' : 'start',
+      borderWidth: p.isTarget ? 3 : 2,
+      tension: 0.35,
+      spanGaps: true,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: p.color,
+    })),
   };
 
   const options = {
@@ -84,13 +83,10 @@ export default function RaceAreaChart({ history, theme, embedded = false }) {
         bodyFont: { family: FONT, size: 12 },
         callbacks: {
           title: (items) => points[items[0].dataIndex]?.timestamp,
-          label: (item) => {
-            const p = points[item.dataIndex];
-            const name = item.datasetIndex === 0 ? p.targetCode : p.runnerUpCode;
-            return `${name}: ${item.parsed.y.toLocaleString('vi-VN')} phiếu`;
-          },
-          footer: (items) => `Cách biệt: ${points[items[0].dataIndex]?.gap} phiếu`,
+          label: (item) => `${item.dataset.label}: ${item.parsed.y.toLocaleString('vi-VN')} phiếu`,
+          footer: (items) => `Cách biệt đội nhà: ${points[items[0].dataIndex]?.gap} phiếu`,
         },
+        itemSort: (a, b) => b.parsed.y - a.parsed.y,
       },
     },
     scales: {
@@ -139,14 +135,12 @@ export default function RaceAreaChart({ history, theme, embedded = false }) {
         </div>}
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ec4899]"></span>
-            {last?.targetCode || 'KHNN2026-002'}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2dd4bf]"></span>
-            {last?.runnerUpCode || 'Đối thủ gần nhất'}
-          </span>
+          {series.map((p) => (
+            <span key={p.code} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }}></span>
+              {p.code}
+            </span>
+          ))}
           {points.length >= 2 && (
             <span
               title={`Thay đổi so với đầu kỳ (${first.timestamp}): ${gapChange >= 0 ? '+' : ''}${gapChange}`}
