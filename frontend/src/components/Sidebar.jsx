@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import Logo from './Logo';
 import {
   LayoutDashboard,
-  TrendingUp,
   BarChart3,
   Table2,
   RefreshCw,
@@ -15,7 +14,6 @@ import {
 
 const NAV_ITEMS = [
   { id: 'tong-quan', label: 'Tổng quan', icon: LayoutDashboard },
-  { id: 'dien-bien', label: 'Tỷ trọng phiếu', icon: TrendingUp },
   { id: 'bieu-do', label: 'Biểu đồ Top 5', icon: BarChart3 },
   { id: 'bang-xep-hang', label: 'Bảng xếp hạng', icon: Table2 },
 ];
