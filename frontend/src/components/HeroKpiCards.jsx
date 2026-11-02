@@ -139,7 +139,7 @@ export default function HeroKpiCards({
                   ? 'bg-teal-500/15 text-teal-400 border-teal-500/40'
                   : 'bg-teal-50 text-[#9333ea] border-teal-200'
               }`}>
-                Khoảng cách an toàn
+                Safe
               </span>
             )}
           </div>

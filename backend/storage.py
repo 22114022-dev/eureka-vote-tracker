@@ -321,7 +321,7 @@ class Storage:
                 "nearestCompetitor": nearest,
                 "statusBadge": (
                     "Đang bám đuổi rất sát!" if is_close
-                    else "Khoảng cách an toàn" if is_ahead
+                    else "Safe" if is_ahead
                     else "Đang xếp sau Top 1"
                 ),
                 "alertLevel": "danger" if abs(gap) <= 25 else ("warning" if is_close else "normal")
