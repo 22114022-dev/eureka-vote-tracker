@@ -9,6 +9,7 @@ import LeaderboardTable from './components/LeaderboardTable';
 import TeamPickerModal from './components/TeamPickerModal';
 
 const DEFAULT_TEAM = 'KHNN2026-002';
+const PORTAL_URL = 'https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN';
 import { AlertTriangle, Bell, BellOff, Sprout } from 'lucide-react';
 
 export default function App() {
@@ -175,6 +176,9 @@ export default function App() {
   };
 
   const isDark = theme === 'dark';
+  // The portal link opens the home team's voting page (seed data has no entry id)
+  const targetId = dashboardData?.targetProject?.id;
+  const voteUrl = targetId ? `${PORTAL_URL}/${targetId}` : PORTAL_URL;
 
   return (
     <div className={`min-h-screen transition-colors duration-200 font-sans ${
@@ -187,6 +191,7 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenTeamPicker={() => setIsTeamPickerOpen(true)}
+        voteUrl={voteUrl}
         ready={!!dashboardData}
         collapsed={sidebarCollapsed}
         onCollapse={toggleSidebar}
@@ -232,6 +237,8 @@ export default function App() {
         teamCode={dashboardData?.targetProject?.code || team}
         gapTracker={dashboardData?.gapTracker}
         lastUpdated={dashboardData?.lastUpdated}
+        votingEnd={dashboardData?.votingEnd}
+        voteUrl={voteUrl}
         sidebarCollapsed={sidebarCollapsed}
         onExpandSidebar={toggleSidebar}
       />

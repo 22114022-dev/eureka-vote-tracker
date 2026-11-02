@@ -25,6 +25,7 @@ export default function Sidebar({
   theme,
   onToggleTheme,
   onOpenTeamPicker,
+  voteUrl,
   ready,
   collapsed,
   onCollapse,
@@ -174,7 +175,7 @@ export default function Sidebar({
       {/* Source link */}
       <div className="mt-auto p-4">
         <a
-          href="https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN"
+          href={voteUrl}
           target="_blank"
           rel="noreferrer"
           className={`flex items-center justify-between gap-2 px-3 py-3 rounded-xl text-sm font-bold transition-all ${

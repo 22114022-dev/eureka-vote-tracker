@@ -1,5 +1,6 @@
 import React from 'react';
 import Logo from './Logo';
+import VotingCountdown from './VotingCountdown';
 import { RefreshCw, Moon, Sun, Flag, ExternalLink, PanelLeftOpen } from 'lucide-react';
 
 export default function Header({
@@ -12,6 +13,8 @@ export default function Header({
   teamCode,
   gapTracker,
   lastUpdated,
+  votingEnd,
+  voteUrl,
   sidebarCollapsed,
   onExpandSidebar
 }) {
@@ -26,7 +29,7 @@ export default function Header({
         : 'bg-white/75 border-[#E2E8F0] text-[#0F172A] shadow-sm'
     }`}>
       <div className="w-full max-w-[96%] 2xl:max-w-[1860px] mx-auto px-3 sm:px-5 lg:px-6 py-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
 
           {/* Left Title */}
           <div className="flex items-center gap-2 min-w-0 shrink-0 sm:shrink">
@@ -48,12 +51,18 @@ export default function Header({
             <div className={`${hideWithSidebar} w-7 h-7 shrink-0 select-none`}>
               <Logo className="w-full h-full" />
             </div>
-            <h1 className="text-[13px] sm:text-sm font-extrabold tracking-tight whitespace-nowrap truncate">
+            {/* Phones keep only the logo so the countdown fits on one row */}
+            <h1 className="hidden sm:block text-sm font-extrabold tracking-tight whitespace-nowrap truncate">
               <span className={hideWithSidebar}>Euréka 2026 · KHNN</span>
               <span className={sidebarCollapsed ? 'hidden' : 'hidden lg:inline'}>
                 Bảng Xếp Hạng Bình Chọn Khoa Học Nông Nghiệp
               </span>
             </h1>
+          </div>
+
+          {/* Time left to vote: always visible, even while the sidebar holds the controls */}
+          <div className="ml-auto shrink-0">
+            <VotingCountdown endsAt={votingEnd} voteUrl={voteUrl} theme={theme} />
           </div>
 
           {/* Right Action Controls */}
@@ -119,7 +128,7 @@ export default function Header({
 
             {/* Official portal link */}
             <a
-              href="https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN"
+              href={voteUrl}
               target="_blank"
               rel="noreferrer"
               title="Cổng bình chọn gốc"

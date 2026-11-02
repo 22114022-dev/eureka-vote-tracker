@@ -20,6 +20,8 @@ DEFAULT_TEAM = "KHNN2026-002"
 
 # Servers such as Render run in UTC; all stored times use Vietnam time (UTC+7)
 VN_TZ = timezone(timedelta(hours=7))
+# Voting deadline; set VOTING_END on the server if the organizers change it, empty hides the countdown
+VOTING_END = os.environ.get("VOTING_END", "2026-11-10T17:00:00+07:00")
 
 def _now():
     return datetime.now(VN_TZ)
@@ -350,6 +352,7 @@ class Storage:
                 "targetVoteShare": round(target["votes"] / total_votes * 100, 2) if total_votes else 0
             },
             "lastUpdated": self.last_updated,
+            "votingEnd": VOTING_END,
             "fetchDurationMs": self.last_fetch_duration_ms,
             "status": self.last_scrape_status
         }
