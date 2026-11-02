@@ -232,7 +232,6 @@ export default function App() {
         teamCode={dashboardData?.targetProject?.code || team}
         gapTracker={dashboardData?.gapTracker}
         lastUpdated={dashboardData?.lastUpdated}
-        fetchDurationMs={dashboardData?.fetchDurationMs}
         sidebarCollapsed={sidebarCollapsed}
         onExpandSidebar={toggleSidebar}
       />

@@ -1,6 +1,6 @@
 import React from 'react';
 import Logo from './Logo';
-import { RefreshCw, Moon, Sun, Flag, ExternalLink, Activity, PanelLeftOpen } from 'lucide-react';
+import { RefreshCw, Moon, Sun, Flag, ExternalLink, PanelLeftOpen } from 'lucide-react';
 
 export default function Header({
   countdown,
@@ -12,7 +12,6 @@ export default function Header({
   teamCode,
   gapTracker,
   lastUpdated,
-  fetchDurationMs,
   sidebarCollapsed,
   onExpandSidebar
 }) {
@@ -26,80 +25,44 @@ export default function Header({
         ? 'bg-slate-900/80 border-slate-800 text-white shadow-lg shadow-black/20'
         : 'bg-white/75 border-[#E2E8F0] text-[#0F172A] shadow-sm'
     }`}>
-      <div className="w-full max-w-[96%] 2xl:max-w-[1860px] mx-auto px-3 sm:px-5 lg:px-6 py-2 sm:py-3">
-        <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-stretch sm:gap-3 lg:flex-row lg:items-center">
-          
-          {/* Left Title and Badges */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0 sm:shrink">
+      <div className="w-full max-w-[96%] 2xl:max-w-[1860px] mx-auto px-3 sm:px-5 lg:px-6 py-2">
+        <div className="flex items-center justify-between gap-2">
+
+          {/* Left Title */}
+          <div className="flex items-center gap-2 min-w-0 shrink-0 sm:shrink">
             {sidebarCollapsed && (
               <button
                 type="button"
                 onClick={onExpandSidebar}
                 title="Hiện thanh bên"
                 aria-label="Hiện thanh bên"
-                className={`hidden lg:flex p-2 rounded-xl border shrink-0 transition-all active:scale-95 ${
+                className={`hidden lg:flex p-1.5 rounded-lg border shrink-0 transition-all active:scale-95 ${
                   isDark
                     ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
                     : 'bg-white hover:bg-slate-100 border-[#E2E8F0] text-[#475569]'
                 }`}
               >
-                <PanelLeftOpen className="w-5 h-5" />
+                <PanelLeftOpen className="w-4 h-4" />
               </button>
             )}
-            <div className={`${hideWithSidebar} w-7 h-7 sm:w-11 sm:h-11 shrink-0 select-none`}>
+            <div className={`${hideWithSidebar} w-7 h-7 shrink-0 select-none`}>
               <Logo className="w-full h-full" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-[13px] sm:text-lg xl:text-xl font-extrabold tracking-tight truncate sm:whitespace-normal">
-                  <span className="sm:hidden whitespace-nowrap">Euréka 2026 · KHNN</span>
-                  <span className="hidden sm:inline">
-                    <span className={hideWithSidebar}>Euréka 2026 — </span>Bảng Xếp Hạng Bình Chọn Khoa Học Nông Nghiệp
-                  </span>
-                </h1>
-                <span className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[12px] font-semibold rounded-full border shrink-0 ${
-                  isDark
-                    ? 'bg-[#9333ea]/20 text-[#e879f9] border-[#9333ea]/40'
-                    : 'bg-teal-50 text-[#9333ea] border-teal-200'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isDark ? 'bg-[#e879f9]' : 'bg-[#9333ea]'}`}></span>
-                  Official API Live
-                </span>
-                {fetchDurationMs ? (
-                  <span className={`hidden sm:inline-flex items-center gap-1 text-[12px] font-mono px-2 py-0.5 rounded-md border shrink-0 ${
-                    isDark
-                      ? 'text-slate-400 bg-slate-800/80 border-slate-700/60'
-                      : 'text-[#475569] bg-slate-100 border-[#E2E8F0]'
-                  }`}>
-                    <Activity className={`w-3 h-3 ${isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}`} />
-                    {fetchDurationMs}ms
-                  </span>
-                ) : null}
-              </div>
-              <p className={`hidden sm:flex text-xs ${isDark ? 'text-slate-400' : 'text-[#475569]'} mt-0.5 items-center gap-2 flex-wrap`}>
-                <span>
-                  Giám sát Top 5 & Đề tài trọng điểm: <strong className={isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}>{teamCode || 'KHNN2026-002'}</strong>
-                </span>
-                <a
-                  href="https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN"
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`${hideWithSidebar} inline-flex items-center gap-1 font-semibold hover:underline transition-colors ${
-                    isDark ? 'text-teal-400 hover:text-teal-300' : 'text-[#9333ea] hover:text-[#7e22ce]'
-                  }`}
-                >
-                  <span>Cổng bình chọn gốc</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </p>
-            </div>
+            <h1 className="text-[13px] sm:text-sm font-extrabold tracking-tight whitespace-nowrap truncate">
+              <span className={hideWithSidebar}>Euréka 2026 · KHNN</span>
+              <span className={sidebarCollapsed ? 'hidden' : 'hidden lg:inline'}>
+                Bảng Xếp Hạng Bình Chọn Khoa Học Nông Nghiệp
+              </span>
+            </h1>
           </div>
 
           {/* Right Action Controls */}
-          <div className={`flex ${hideWithSidebar} items-center gap-1.5 sm:flex-wrap sm:gap-2.5 sm:self-start lg:self-center shrink-0`}>
-            
+          <div className={`flex ${hideWithSidebar} items-center gap-1.5 shrink-0`}>
+
             {/* Live Status Indicator & Countdown Ring */}
-            <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-medium border ${
+            <div
+              title="Quét định kỳ 60 giây"
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium border ${
               isDark
                 ? 'bg-slate-800/80 border-slate-700/80 text-slate-300'
                 : 'bg-slate-50 border-[#E2E8F0] text-[#475569]'
@@ -112,7 +75,6 @@ export default function Header({
                   isDark ? 'bg-[#e879f9]' : 'bg-[#9333ea]'
                 }`}></span>
               </span>
-              <span className="hidden sm:inline">Quét định kỳ 60s</span>
               <span className={`font-mono font-bold tabular-nums text-center min-w-[3ch] px-2 py-0.5 rounded-md border ${
                 isDark
                   ? 'text-[#e879f9] bg-teal-500/10 border-teal-500/20'
@@ -126,7 +88,8 @@ export default function Header({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-semibold transition-all border shadow-sm ${
+              aria-label="Làm mới"
+              className={`flex items-center p-1.5 rounded-lg text-xs font-semibold transition-all border shadow-sm ${
                 isDark
                   ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 active:scale-95'
                   : 'bg-white hover:bg-slate-50 border-[#E2E8F0] text-[#0F172A] hover:border-slate-300 active:scale-95'
@@ -138,27 +101,42 @@ export default function Header({
                   ? isDark ? 'animate-spin text-[#e879f9]' : 'animate-spin text-[#9333ea]'
                   : isDark ? 'text-slate-400' : 'text-[#64748B]'
               }`} />
-              <span className="hidden sm:inline">Làm mới</span>
             </button>
 
             {/* Simulation Trigger */}
             <button
               onClick={onOpenTeamPicker}
-              className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-semibold transition-all active:scale-95 border ${
+              aria-label="Chọn đội nhà"
+              className={`flex items-center p-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 border ${
                 isDark
                   ? 'bg-[#9333ea]/15 hover:bg-[#9333ea]/25 text-[#e879f9] border-[#9333ea]/40'
                   : 'bg-teal-50 hover:bg-teal-100/80 text-[#9333ea] border-teal-200'
               }`}
-              title="Chọn đề tài làm đội nhà để theo dõi"
+              title={`Đội nhà: ${teamCode || 'KHNN2026-002'}. Bấm để đổi`}
             >
               <Flag className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Chọn đội nhà</span>
             </button>
+
+            {/* Official portal link */}
+            <a
+              href="https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN"
+              target="_blank"
+              rel="noreferrer"
+              title="Cổng bình chọn gốc"
+              aria-label="Cổng bình chọn gốc"
+              className={`hidden sm:flex p-1.5 rounded-lg border transition-all active:scale-95 ${
+                isDark
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-teal-400'
+                  : 'bg-white hover:bg-slate-100 border-[#E2E8F0] text-[#9333ea]'
+              }`}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
 
             {/* Theme Toggle Button */}
             <button
               onClick={onToggleTheme}
-              className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition-all active:scale-95 ${
+              className={`p-1.5 rounded-lg border transition-all active:scale-95 ${
                 isDark
                   ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-400 hover:text-amber-300'
                   : 'bg-white hover:bg-slate-100 border-[#E2E8F0] text-[#475569] hover:text-[#0F172A]'
