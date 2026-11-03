@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import HeroKpiCards from './components/HeroKpiCards';
@@ -7,10 +7,25 @@ import Top5BarChart from './components/Top5BarChart';
 import HeadToHeadRadar from './components/HeadToHeadRadar';
 import LeaderboardTable from './components/LeaderboardTable';
 import TeamPickerModal from './components/TeamPickerModal';
+import FieldSwitch from './components/FieldSwitch';
+import { FIELDS, DEFAULT_FIELD } from './fields';
 
-const DEFAULT_TEAM = 'KHNN2026-002';
-const PORTAL_URL = 'https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN';
+const PORTAL_BASE = 'https://binhchon.khoahoctre.com.vn/c/eureka-2026';
 import { AlertTriangle, Bell, BellOff, Sprout } from 'lucide-react';
+
+function loadTeam(fieldKey) {
+  const fallback = FIELDS[fieldKey].defaultTeam;
+  try {
+    // KHNN kept the pre-multi-field key, so existing viewers keep their choice
+    return (
+      localStorage.getItem(`eureka_team_${fieldKey}`) ||
+      (fieldKey === 'KHNN' ? localStorage.getItem('eureka_team') : null) ||
+      fallback
+    );
+  } catch {
+    return fallback;
+  }
+}
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
@@ -27,14 +42,21 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [isTeamPickerOpen, setIsTeamPickerOpen] = useState(false);
-  // Home team is chosen per viewer and remembered in this browser
-  const [team, setTeam] = useState(() => {
+  // Field (lĩnh vực) and home team are chosen per viewer and remembered in this browser
+  const [fieldKey, setFieldKey] = useState(() => {
     try {
-      return localStorage.getItem('eureka_team') || DEFAULT_TEAM;
+      const saved = localStorage.getItem('eureka_field');
+      return FIELDS[saved] ? saved : DEFAULT_FIELD;
     } catch {
-      return DEFAULT_TEAM;
+      return DEFAULT_FIELD;
     }
   });
+  const field = FIELDS[fieldKey];
+  const DEFAULT_TEAM = field.defaultTeam;
+  const [team, setTeam] = useState(() => loadTeam(fieldKey));
+  // Ignore responses that arrive after the viewer switched to another field
+  const fieldRef = useRef(fieldKey);
+  fieldRef.current = fieldKey;
   const [soundAlertEnabled, setSoundAlertEnabled] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -62,13 +84,16 @@ export default function App() {
   const fetchDashboard = useCallback(async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const query = `?team=${encodeURIComponent(team)}`;
+      const requestedField = fieldKey;
+      const query = `?field=${requestedField}&team=${encodeURIComponent(team)}`;
       const endpoint = (isManual ? '/api/refresh' : '/api/leaderboard') + query;
       const method = isManual ? 'POST' : 'GET';
       const res = await fetch(endpoint, { method });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const json = await res.json();
       const data = isManual ? json.data : json;
+      if (fieldRef.current !== requestedField) return;
+      if (!data.targetProject) throw new Error('Dữ liệu lĩnh vực chưa sẵn sàng');
       setDashboardData(data);
       setCountdown(data.nextScrapeIn || 60);
       setErrorMsg('');
@@ -79,14 +104,16 @@ export default function App() {
       }
     } catch (err) {
       console.error("Fetch error:", err);
-      setErrorMsg("Không thể kết nối đến máy chủ backend. Vui lòng kiểm tra cổng 5000.");
+      if (fieldRef.current === fieldKey) {
+        setErrorMsg("Không thể kết nối đến máy chủ backend. Vui lòng kiểm tra cổng 5000.");
+      }
     } finally {
       setLoading(false);
       if (isManual) {
         setTimeout(() => setIsRefreshing(false), 500);
       }
     }
-  }, [playAlertSound, team]);
+  }, [playAlertSound, team, fieldKey]);
 
   // Initial load
   useEffect(() => {
@@ -97,11 +124,14 @@ export default function App() {
   const lastUpdated = dashboardData?.lastUpdated;
   useEffect(() => {
     if (!lastUpdated) return;
-    fetch(`/api/history?team=${encodeURIComponent(team)}`)
+    const requestedField = fieldKey;
+    fetch(`/api/history?field=${requestedField}&team=${encodeURIComponent(team)}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then((json) => setHistory(json.history || []))
+      .then((json) => {
+        if (fieldRef.current === requestedField) setHistory(json.history || []);
+      })
       .catch((err) => console.error('History fetch error:', err));
-  }, [lastUpdated, team]);
+  }, [lastUpdated, team, fieldKey]);
 
   // Expose the sticky header height so the pinned KPI row can sit right below it
   useEffect(() => {
@@ -128,6 +158,10 @@ export default function App() {
     return () => observer.disconnect();
   }, [hasData]);
 
+  useEffect(() => {
+    document.title = `Euréka 2026 — Bảng Xếp Hạng Bình Chọn ${field.name} (Real-Time Tracker)`;
+  }, [field.name]);
+
   // Sync theme class to html/document
   useEffect(() => {
     if (theme === 'dark') {
@@ -152,10 +186,26 @@ export default function App() {
     return () => clearInterval(timer);
   }, [fetchDashboard]);
 
+  const handleSelectField = (key) => {
+    if (key === fieldKey) return;
+    setFieldKey(key);
+    setTeam(loadTeam(key));
+    // Drop the other field's data so it never shows under the new field's name
+    setDashboardData(null);
+    setHistory([]);
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      localStorage.setItem('eureka_field', key);
+    } catch {
+      // storage unavailable: the choice only lasts for this visit
+    }
+  };
+
   const handleSelectTeam = (code) => {
     setTeam(code);
     try {
-      localStorage.setItem('eureka_team', code);
+      localStorage.setItem(`eureka_team_${fieldKey}`, code);
     } catch {
       // storage unavailable: the choice only lasts for this visit
     }
@@ -178,7 +228,8 @@ export default function App() {
   const isDark = theme === 'dark';
   // The portal link opens the home team's voting page (seed data has no entry id)
   const targetId = dashboardData?.targetProject?.id;
-  const voteUrl = targetId ? `${PORTAL_URL}/${targetId}` : PORTAL_URL;
+  const portalUrl = `${PORTAL_BASE}/${field.portalSlug}`;
+  const voteUrl = targetId ? `${portalUrl}/${targetId}` : portalUrl;
 
   return (
     <div className={`min-h-screen transition-colors duration-200 font-sans ${
@@ -235,6 +286,8 @@ export default function App() {
         onToggleTheme={toggleTheme}
         onOpenTeamPicker={() => setIsTeamPickerOpen(true)}
         teamCode={dashboardData?.targetProject?.code || team}
+        fieldKey={fieldKey}
+        fieldName={field.name}
         gapTracker={dashboardData?.gapTracker}
         lastUpdated={dashboardData?.lastUpdated}
         votingEnd={dashboardData?.votingEnd}
@@ -263,6 +316,8 @@ export default function App() {
           </div>
         )}
 
+        <FieldSwitch fieldKey={fieldKey} onSelect={handleSelectField} theme={theme} />
+
         {/* Loading Skeleton or Main Dashboard */}
         {loading && !dashboardData ? (
           <div className="py-32 text-center">
@@ -271,7 +326,7 @@ export default function App() {
               Đang kết nối cổng dữ liệu thời gian thực Euréka 2026...
             </p>
             <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Đồng bộ 63 đề tài trên cả 3 trang bình chọn
+              Đồng bộ {field.pages} trang bình chọn lĩnh vực {field.name}
             </p>
           </div>
         ) : (
@@ -325,6 +380,9 @@ export default function App() {
             {/* 3. Detailed Leaderboard Table */}
             <section id="bang-xep-hang" className="scroll-anchor">
               <LeaderboardTable
+                key={fieldKey}
+                pages={field.pages}
+                fieldKey={fieldKey}
                 projects={dashboardData?.projects}
                 targetProject={dashboardData?.targetProject}
                 theme={theme}
@@ -342,6 +400,7 @@ export default function App() {
         projects={dashboardData?.projects}
         team={dashboardData?.targetProject?.code || team}
         defaultTeam={DEFAULT_TEAM}
+        key={fieldKey}
         onSelect={handleSelectTeam}
         theme={theme}
       />
@@ -355,7 +414,7 @@ export default function App() {
         <div className="w-full max-w-[96%] 2xl:max-w-[1860px] mx-auto px-3 sm:px-5 lg:px-6 flex items-center justify-center gap-2 text-center">
           <Sprout className="w-4 h-4 text-[#9333ea] shrink-0" />
           <span>
-            <strong className={isDark ? 'text-slate-200' : 'text-[#0F172A]'}>Euréka 2026 Live Vote Tracker</strong> — Chuyên đề Khoa học Nông nghiệp
+            <strong className={isDark ? 'text-slate-200' : 'text-[#0F172A]'}>Euréka 2026 Live Vote Tracker</strong> — Chuyên đề {field.name}
           </span>
         </div>
       </footer>

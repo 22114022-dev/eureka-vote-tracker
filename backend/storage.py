@@ -4,19 +4,14 @@ import time
 from datetime import datetime, timedelta, timezone
 from initial_data import get_initial_dataset
 from fetcher import fetch_all_pages_concurrently
+from fields import FIELDS, DEFAULT_FIELD, resolve_field
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-CACHE_FILE = os.path.join(DATA_DIR, "votes_state.json")
-HISTORY_FILE = os.path.join(DATA_DIR, "votes_history.json")
-SNAPSHOTS_FILE = os.path.join(DATA_DIR, "votes_snapshots.json")
 
 # Per-project vote snapshots used for time-window deltas (velocity, "Biến động").
 # A snapshot is only stored when votes changed, or as a heartbeat so that an
 # unchanged stretch still has a recent baseline.
-SNAPSHOT_MAX = 1500
 SNAPSHOT_HEARTBEAT_S = 600
-
-DEFAULT_TEAM = "KHNN2026-002"
 
 # Servers such as Render run in UTC; all stored times use Vietnam time (UTC+7)
 VN_TZ = timezone(timedelta(hours=7))
@@ -34,7 +29,16 @@ def _parse_iso(value):
 os.makedirs(DATA_DIR, exist_ok=True)
 
 class Storage:
-    def __init__(self):
+    """Live vote state of one field (lĩnh vực), with its own files and Redis keys."""
+
+    def __init__(self, field_key=DEFAULT_FIELD):
+        self.field = FIELDS[field_key]
+        suffix = self.field["stateSuffix"]
+        self.cache_file = os.path.join(DATA_DIR, f"votes_state{suffix}.json")
+        self.history_file = os.path.join(DATA_DIR, f"votes_history{suffix}.json")
+        self.snapshots_file = os.path.join(DATA_DIR, f"votes_snapshots{suffix}.json")
+        self.redis_prefix = self.field["redisPrefix"]
+        self.default_team = self.field["defaultTeam"]
         self.redis_client = None
         self._init_redis()
         self.projects = []
@@ -71,21 +75,21 @@ class Storage:
         # 1. Try Redis
         if self.redis_client:
             try:
-                cached = self.redis_client.get("eureka_khnn:projects")
+                cached = self.redis_client.get(f"{self.redis_prefix}:projects")
                 if cached:
                     self.projects = json.loads(cached)
-                    cached_hist = self.redis_client.get("eureka_khnn:history")
+                    cached_hist = self.redis_client.get(f"{self.redis_prefix}:history")
                     self.history = json.loads(cached_hist) if cached_hist else []
-                    cached_snaps = self.redis_client.get("eureka_khnn:snapshots")
+                    cached_snaps = self.redis_client.get(f"{self.redis_prefix}:snapshots")
                     self.snapshots = json.loads(cached_snaps) if cached_snaps else []
                     return
             except Exception as e:
                 print(f"[Storage] Redis read error: {e}")
 
         # 2. Try Local File
-        if os.path.exists(CACHE_FILE):
+        if os.path.exists(self.cache_file):
             try:
-                with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                with open(self.cache_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self.projects = data.get("projects", [])
                     self.last_updated = data.get("last_updated", _now().isoformat())
@@ -93,22 +97,22 @@ class Storage:
             except Exception as e:
                 print(f"[Storage] Local cache read error: {e}")
 
-        if os.path.exists(HISTORY_FILE):
+        if os.path.exists(self.history_file):
             try:
-                with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                with open(self.history_file, "r", encoding="utf-8") as f:
                     self.history = json.load(f)
             except Exception as e:
                 print(f"[Storage] History read error: {e}")
 
-        if os.path.exists(SNAPSHOTS_FILE):
+        if os.path.exists(self.snapshots_file):
             try:
-                with open(SNAPSHOTS_FILE, "r", encoding="utf-8") as f:
+                with open(self.snapshots_file, "r", encoding="utf-8") as f:
                     self.snapshots = json.load(f)
             except Exception as e:
                 print(f"[Storage] Snapshots read error: {e}")
 
-        # 3. Fallback to Initial Dataset if empty
-        if not self.projects:
+        # 3. Fallback to Initial Dataset if empty (only KHNN ships seed data)
+        if not self.projects and self.field["key"] == "KHNN":
             # Seed data is only a placeholder until the first live sync:
             # no history point and no vote deltas should be derived from it.
             self.projects = get_initial_dataset()
@@ -117,7 +121,7 @@ class Storage:
 
     def _save_state(self):
         try:
-            with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            with open(self.cache_file, "w", encoding="utf-8") as f:
                 json.dump({
                     "projects": self.projects,
                     "last_updated": self.last_updated,
@@ -125,26 +129,28 @@ class Storage:
                     "last_fetch_duration_ms": self.last_fetch_duration_ms
                 }, f, ensure_ascii=False, indent=2)
 
-            with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump(self.history[-100:], f, ensure_ascii=False, indent=2)
 
-            with open(SNAPSHOTS_FILE, "w", encoding="utf-8") as f:
-                json.dump(self.snapshots, f, ensure_ascii=False, separators=(",", ":"))
+            if self._snapshots_dirty:
+                with open(self.snapshots_file, "w", encoding="utf-8") as f:
+                    json.dump(self.snapshots, f, ensure_ascii=False, separators=(",", ":"))
         except Exception as e:
             print(f"[Storage] Error writing state: {e}")
 
         if self.redis_client:
             try:
-                self.redis_client.set("eureka_khnn:projects", json.dumps(self.projects, ensure_ascii=False))
-                self.redis_client.set("eureka_khnn:history", json.dumps(self.history[-100:], ensure_ascii=False))
+                self.redis_client.set(f"{self.redis_prefix}:projects", json.dumps(self.projects, ensure_ascii=False))
+                self.redis_client.set(f"{self.redis_prefix}:history", json.dumps(self.history[-100:], ensure_ascii=False))
                 # Snapshots are the largest value; only push them when they changed
                 # to keep Redis bandwidth low on free tiers.
                 if self._snapshots_dirty:
-                    self.redis_client.set("eureka_khnn:snapshots", json.dumps(self.snapshots, ensure_ascii=False))
-                    self._snapshots_dirty = False
-                self.redis_client.set("eureka_khnn:last_updated", self.last_updated)
+                    self.redis_client.set(f"{self.redis_prefix}:snapshots", json.dumps(self.snapshots, ensure_ascii=False))
+                self.redis_client.set(f"{self.redis_prefix}:last_updated", self.last_updated)
             except Exception as e:
                 print(f"[Storage] Redis write error: {e}")
+
+        self._snapshots_dirty = False
 
     def _record_snapshot(self, initial=False):
         now_str = _now().strftime("%H:%M:%S")
@@ -156,7 +162,7 @@ class Storage:
             "timestamp": now_str,
             "iso": _now().isoformat(),
             "targetVotes": target["votes"] if target else 0,
-            "targetCode": target["code"] if target else "KHNN2026-002",
+            "targetCode": target["code"] if target else self.default_team,
             "runnerUpVotes": runner_up["votes"] if runner_up else 0,
             "runnerUpCode": runner_up["code"] if runner_up else "",
             "rank3Votes": rank3["votes"] if rank3 else 0,
@@ -178,7 +184,7 @@ class Storage:
             if last["votes"] == votes and age < SNAPSHOT_HEARTBEAT_S:
                 return
         self.snapshots.append({"iso": now.isoformat(), "votes": votes})
-        self.snapshots = self.snapshots[-SNAPSHOT_MAX:]
+        self.snapshots = self.snapshots[-self.field["snapshotMax"]:]
         self._snapshots_dirty = True
 
     def _votes_at(self, seconds_ago):
@@ -193,13 +199,15 @@ class Storage:
 
     def sync_live_data(self):
         """
-        Fetches live data concurrently from the 3 official API endpoints,
+        Fetches live data concurrently from the field's official API pages,
         computes rank and vote deltas, and updates internal state.
         """
-        fetched_projects, duration_ms, errors = fetch_all_pages_concurrently()
+        fetched_projects, duration_ms, errors = fetch_all_pages_concurrently(self.field["key"])
         self.last_fetch_duration_ms = duration_ms
 
-        if not fetched_projects or len(fetched_projects) < 10:
+        # A failed page would drop its projects from the ranking: keep the last good data instead
+        min_expected = 10 if self._using_seed else max(10, int(len(self.projects) * 0.95))
+        if len(fetched_projects) < min_expected:
             status = f"Lỗi đồng bộ trực tiếp ({'; '.join(errors)}) - Dùng dữ liệu lưu đệm"
             self.last_scrape_status = status
             return self.get_dashboard_payload()
@@ -230,7 +238,7 @@ class Storage:
         """Valid project code for the requested home team, else the default."""
         codes = {p["code"] for p in self.projects}
         team = (team or "").strip().upper()
-        return team if team in codes else DEFAULT_TEAM
+        return team if team in codes else self.default_team
 
     def get_history(self, team=None):
         """Race history of `team` vs its nearest competitor, built from per-project snapshots."""
@@ -258,8 +266,14 @@ class Storage:
             })
         return points
 
+    def _field_info(self):
+        f = self.field
+        return {k: f[k] for k in ("key", "name", "shortName", "defaultTeam", "pages", "portalSlug")}
+
     def get_dashboard_payload(self, team=None):
         team = self.resolve_team(team)
+        if not self.projects:
+            return {"projects": [], "field": self._field_info(), "status": self.last_scrape_status}
         # Work on copies: the home team differs per viewer, shared state must stay untouched
         sorted_projects = sorted((dict(p) for p in self.projects), key=lambda x: x["votes"], reverse=True)
         for p in sorted_projects:
@@ -346,15 +360,22 @@ class Storage:
             "chasingPack": chasing_pack,
             "overview": {
                 "totalProjects": len(sorted_projects),
-                "totalPages": 3,
+                "totalPages": self.field["pages"],
                 "totalVotes": total_votes,
                 "avgVotes": avg_votes,
                 "targetVoteShare": round(target["votes"] / total_votes * 100, 2) if total_votes else 0
             },
+            "field": self._field_info(),
             "lastUpdated": self.last_updated,
             "votingEnd": VOTING_END,
             "fetchDurationMs": self.last_fetch_duration_ms,
             "status": self.last_scrape_status
         }
 
-storage = Storage()
+storages = {key: Storage(key) for key in FIELDS}
+storage = storages[DEFAULT_FIELD]
+
+
+def get_storage(field_key):
+    """Storage of the requested field, falling back to the default field."""
+    return storages[resolve_field(field_key)["key"]]

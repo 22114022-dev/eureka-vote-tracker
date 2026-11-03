@@ -11,6 +11,8 @@ export default function Header({
   onToggleTheme,
   onOpenTeamPicker,
   teamCode,
+  fieldKey,
+  fieldName,
   gapTracker,
   lastUpdated,
   votingEnd,
@@ -53,9 +55,9 @@ export default function Header({
             </div>
             {/* Phones keep only the logo so the countdown fits on one row */}
             <h1 className="hidden sm:block text-sm font-extrabold tracking-tight whitespace-nowrap truncate">
-              <span className={hideWithSidebar}>Euréka 2026 · KHNN</span>
+              <span className={hideWithSidebar}>Euréka 2026 · {fieldKey}</span>
               <span className={sidebarCollapsed ? 'hidden' : 'hidden lg:inline'}>
-                Bảng Xếp Hạng Bình Chọn Khoa Học Nông Nghiệp
+                Bảng Xếp Hạng Bình Chọn {fieldName}
               </span>
             </h1>
           </div>
@@ -103,7 +105,7 @@ export default function Header({
                   ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 active:scale-95'
                   : 'bg-white hover:bg-slate-50 border-[#E2E8F0] text-[#0F172A] hover:border-slate-300 active:scale-95'
               }`}
-              title="Kích hoạt quét đồng thời 3 trang API ngay lập tức"
+              title="Kích hoạt quét đồng thời toàn bộ trang API ngay lập tức"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${
                 isRefreshing

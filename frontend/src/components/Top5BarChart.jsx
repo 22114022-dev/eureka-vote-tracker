@@ -238,7 +238,7 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
               callback(value) {
                 const p = displayItems[value];
                 if (!p) return '';
-                const code = this.chart.width >= 520 ? p.code : p.code.replace('KHNN2026-', '');
+                const code = this.chart.width >= 520 ? p.code : p.code.replace(/^[A-Z]+2026-/, '');
                 return `#${p.rank}  ${code}`;
               },
             },
@@ -269,11 +269,11 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
               autoSkip: false,
               maxRotation: 0,
               minRotation: 0,
-              // Narrow chart: drop the shared "KHNN2026-" prefix so labels never collide
+              // Narrow chart: drop the shared "XXXX2026-" prefix so labels never collide
               callback(value) {
                 const p = displayItems[value];
                 if (!p) return '';
-                const code = this.chart.width < 640 ? p.code.replace('KHNN2026-', '') : p.code;
+                const code = this.chart.width < 640 ? p.code.replace(/^[A-Z]+2026-/, '') : p.code;
                 return [`#${p.rank}`, code];
               },
             },

@@ -2,7 +2,8 @@ import os
 import atexit
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from storage import storage
+from storage import get_storage
+from fields import FIELDS
 from scheduler import start_scheduler, stop_scheduler, get_next_run_seconds
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
@@ -19,28 +20,28 @@ def health():
     return jsonify({
         "status": "online",
         "service": "Euréka 2026 KHNN Live Vote Tracker",
-        "version": "2.0.0 (Official REST API)",
-        "categoryId": 6,
-        "categoryName": "Khoa học Nông nghiệp"
+        "version": "2.1.0 (Official REST API, multi-field)",
+        "fields": [{"key": f["key"], "name": f["name"], "categoryId": f["categoryId"]} for f in FIELDS.values()]
     })
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    payload = storage.get_dashboard_payload(request.args.get("team"))
+    payload = get_storage(request.args.get("field")).get_dashboard_payload(request.args.get("team"))
     payload["nextScrapeIn"] = get_next_run_seconds()
     return jsonify(payload)
 
 @app.route("/api/history", methods=["GET"])
 def get_history():
     return jsonify({
-        "history": storage.get_history(request.args.get("team"))
+        "history": get_storage(request.args.get("field")).get_history(request.args.get("team"))
     })
 
 @app.route("/api/refresh", methods=["POST"])
 def manual_refresh():
-    """Trigger an immediate concurrent fetch across all 3 pages."""
-    storage.sync_live_data()
-    payload = storage.get_dashboard_payload(request.args.get("team"))
+    """Trigger an immediate concurrent fetch of every page of the requested field."""
+    store = get_storage(request.args.get("field"))
+    store.sync_live_data()
+    payload = store.get_dashboard_payload(request.args.get("team"))
     payload["nextScrapeIn"] = 60
     return jsonify({
         "message": "Đã cập nhật dữ liệu trực tiếp từ cổng chính thức Euréka 2026!",

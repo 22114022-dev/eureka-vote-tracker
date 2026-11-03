@@ -10,6 +10,8 @@ import {
 
 export default function LeaderboardTable({
   projects,
+  pages = 3,
+  fieldKey = 'KHNN',
   targetProject,
   theme
 }) {
@@ -29,7 +31,7 @@ export default function LeaderboardTable({
     return projects.filter((p) => {
       // Page filter
       if (selectedPage === 'top5' && p.rank > 5) return false;
-      if (['1', '2', '3'].includes(selectedPage) && p.page?.toString() !== selectedPage) return false;
+      if (/^\d+$/.test(selectedPage) && p.page?.toString() !== selectedPage) return false;
 
       // Search filter
       if (searchQuery.trim()) {
@@ -99,7 +101,7 @@ export default function LeaderboardTable({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `Eureka2026_KHNN_Leaderboard_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Eureka2026_${fieldKey}_Leaderboard_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -125,11 +127,11 @@ export default function LeaderboardTable({
                     ? 'bg-slate-800 border-slate-700 text-slate-300'
                     : 'bg-slate-100 border-[#E2E8F0] text-[#475569]'
                 }`}>
-                  {sortedProjects.length} / 63 đề tài
+                  {sortedProjects.length} / {projects?.length ?? 0} đề tài
                 </span>
               </div>
               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-[#64748B]'} mt-1`}>
-                Đồng bộ trực tiếp qua Official API từ tất cả 3 trang bình chọn Euréka 2026
+                Đồng bộ trực tiếp qua Official API từ tất cả {pages} trang bình chọn Euréka 2026
               </p>
             </div>
           </div>
@@ -165,9 +167,9 @@ export default function LeaderboardTable({
               {[
                 { id: 'all', label: 'Tất cả' },
                 { id: 'top5', label: 'Top 5' },
-                { id: '1', label: 'Trang 1' },
-                { id: '2', label: 'Trang 2' },
-                { id: '3', label: 'Trang 3' },
+                ...(pages <= 3
+                  ? Array.from({ length: pages }, (_, i) => ({ id: String(i + 1), label: `Trang ${i + 1}` }))
+                  : []),
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -185,6 +187,27 @@ export default function LeaderboardTable({
               ))}
             </div>
 
+            {/* Official portal page filter: too many pages for tabs */}
+            {pages > 3 && (
+              <select
+                value={/^\d+$/.test(selectedPage) ? selectedPage : ''}
+                onChange={(e) => {
+                  setSelectedPage(e.target.value || 'all');
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border outline-none cursor-pointer transition-colors ${
+                  isDark
+                    ? 'bg-slate-800 border-slate-700 text-slate-300'
+                    : 'bg-white border-[#E2E8F0] text-[#475569] hover:border-slate-300'
+                }`}
+              >
+                <option value="">Trang cổng</option>
+                {Array.from({ length: pages }, (_, i) => (
+                  <option key={i + 1} value={String(i + 1)}>Trang {i + 1}</option>
+                ))}
+              </select>
+            )}
+
             {/* Page Size Selector */}
             <select
               value={pageSize}
@@ -200,7 +223,7 @@ export default function LeaderboardTable({
             >
               <option value="15">15 / trang</option>
               <option value="25">25 / trang</option>
-              <option value="all">Xem tất cả 63</option>
+              <option value="all">Xem tất cả {projects?.length ?? ''}</option>
             </select>
 
             {/* Export CSV Button */}

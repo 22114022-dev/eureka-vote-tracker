@@ -1,18 +1,19 @@
 import time
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from fields import FIELDS, DEFAULT_FIELD, PAGE_SIZE
 
-API_URL_TEMPLATE = "https://binhchon.khoahoctre.com.vn/api/c/eureka-2026/entries?categoryId=6&page={page}&pageSize=24"
+API_URL_TEMPLATE = "https://binhchon.khoahoctre.com.vn/api/c/eureka-2026/entries?categoryId={category}&page={page}&pageSize={size}"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
-    "Referer": "https://binhchon.khoahoctre.com.vn/c/eureka-2026/KHNN"
+    "Referer": "https://binhchon.khoahoctre.com.vn/c/eureka-2026/"
 }
 
-def fetch_single_page(page_num, session=None, timeout=8):
+def fetch_single_page(page_num, category_id, session=None, timeout=8):
     """Fetches a single page from the official Euréka REST API."""
-    url = API_URL_TEMPLATE.format(page=page_num)
+    url = API_URL_TEMPLATE.format(category=category_id, page=page_num, size=PAGE_SIZE)
     client = session or requests
     try:
         resp = client.get(url, headers=HEADERS, timeout=timeout)
@@ -22,11 +23,12 @@ def fetch_single_page(page_num, session=None, timeout=8):
     except Exception as e:
         return page_num, None, str(e)
 
-def fetch_all_pages_concurrently(timeout=8):
+def fetch_all_pages_concurrently(field_key=DEFAULT_FIELD, timeout=8):
     """
-    Fetches pages 1, 2, and 3 concurrently using ThreadPoolExecutor(max_workers=3).
+    Fetches every page of a field concurrently (3 for KHNN, 17 for KTE).
     Returns normalized list of all projects and fetch duration in milliseconds.
     """
+    field = FIELDS[field_key]
     start_time = time.time()
     all_raw_items = []
     errors = []
@@ -34,10 +36,10 @@ def fetch_all_pages_concurrently(timeout=8):
     # Use a persistent session with connection pooling for maximum speed (< 300ms)
     with requests.Session() as session:
         session.headers.update(HEADERS)
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        with ThreadPoolExecutor(max_workers=min(field["pages"], 8)) as executor:
             future_to_page = {
-                executor.submit(fetch_single_page, page, session, timeout): page
-                for page in [1, 2, 3]
+                executor.submit(fetch_single_page, page, field["categoryId"], session, timeout): page
+                for page in range(1, field["pages"] + 1)
             }
 
             for future in as_completed(future_to_page):
@@ -69,14 +71,15 @@ def fetch_all_pages_concurrently(timeout=8):
             "page": item.get("page", 1),
             "link": item.get("link"),
             "posterPath": item.get("posterPath"),
-            "isTarget": (code == "KHNN2026-002")
+            "isTarget": (code == field["defaultTeam"])
         })
 
     return normalized_projects, fetch_duration_ms, errors
 
 if __name__ == "__main__":
-    projects, duration, errs = fetch_all_pages_concurrently()
-    print(f"Fetched {len(projects)} projects in {duration}ms (Errors: {errs})")
-    target = next((p for p in projects if p["isTarget"]), None)
-    if target:
-        print(f"Target KHNN2026-002: {target['votes']} votes")
+    for key in FIELDS:
+        projects, duration, errs = fetch_all_pages_concurrently(key)
+        print(f"{key}: fetched {len(projects)} projects in {duration}ms (Errors: {errs})")
+        target = next((p for p in projects if p["isTarget"]), None)
+        if target:
+            print(f"Target {target['code']}: {target['votes']} votes")

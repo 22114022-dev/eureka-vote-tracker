@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
-from storage import storage
+from storage import storages
 
 scheduler = BackgroundScheduler()
 _last_run_time = datetime.datetime.now()
@@ -8,12 +8,13 @@ _last_run_time = datetime.datetime.now()
 def scheduled_job():
     global _last_run_time
     _last_run_time = datetime.datetime.now()
-    print(f"[Scheduler] [{_last_run_time.strftime('%H:%M:%S')}] Concurrently syncing 3 pages from Euréka API...")
-    try:
-        storage.sync_live_data()
-        print(f"[Scheduler] [{_last_run_time.strftime('%H:%M:%S')}] Live sync completed.")
-    except Exception as e:
-        print(f"[Scheduler] Live sync error: {e}")
+    print(f"[Scheduler] [{_last_run_time.strftime('%H:%M:%S')}] Concurrently syncing all fields from Euréka API...")
+    for key, store in storages.items():
+        try:
+            store.sync_live_data()
+            print(f"[Scheduler] [{_last_run_time.strftime('%H:%M:%S')}] {key} live sync completed.")
+        except Exception as e:
+            print(f"[Scheduler] {key} live sync error: {e}")
 
 def get_next_run_seconds():
     global _last_run_time

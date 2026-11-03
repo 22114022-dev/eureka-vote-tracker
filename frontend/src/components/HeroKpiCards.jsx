@@ -266,10 +266,10 @@ export default function HeroKpiCards({
             <span className={`text-3xl sm:text-3xl xl:text-4xl 2xl:text-[42px] font-black tracking-tight font-mono ${
               isDark ? 'text-purple-400' : 'text-purple-700'
             }`}>
-              {overview?.totalProjects || 63}
+              {overview?.totalProjects}
             </span>
             <span className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
-              đề tài (3 trang)
+              đề tài ({overview?.totalPages || 3} trang)
             </span>
           </div>
 
