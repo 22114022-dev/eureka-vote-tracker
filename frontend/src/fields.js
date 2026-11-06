@@ -15,6 +15,14 @@ export const FIELDS = {
     defaultTeam: 'KTE2026-136',
     pages: 17,
     portalSlug: 'KTE'
+  },
+  KHGD: {
+    key: 'KHGD',
+    name: 'Khoa học Giáo dục',
+    shortName: 'Giáo dục',
+    defaultTeam: 'KHGD2026-017',
+    pages: 8,
+    portalSlug: 'KHGD'
   }
 };
 

@@ -11,17 +11,31 @@ HEADERS = {
     "Referer": "https://binhchon.khoahoctre.com.vn/c/eureka-2026/"
 }
 
+# The official API answers HTTP 429 when many pages are requested at once
+RETRY_STATUSES = {429, 502, 503, 504}
+MAX_ATTEMPTS = 4
+
 def fetch_single_page(page_num, category_id, session=None, timeout=8):
-    """Fetches a single page from the official Euréka REST API."""
+    """Fetches a single page from the official Euréka REST API, retrying when it is rate limited."""
     url = API_URL_TEMPLATE.format(category=category_id, page=page_num, size=PAGE_SIZE)
     client = session or requests
-    try:
-        resp = client.get(url, headers=HEADERS, timeout=timeout)
-        if resp.status_code == 200:
-            return page_num, resp.json(), None
-        return page_num, None, f"HTTP {resp.status_code}"
-    except Exception as e:
-        return page_num, None, str(e)
+    error = None
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            resp = client.get(url, headers=HEADERS, timeout=timeout)
+            if resp.status_code == 200:
+                return page_num, resp.json(), None
+            error = f"HTTP {resp.status_code}"
+            if resp.status_code not in RETRY_STATUSES:
+                break
+            retry_after = resp.headers.get("Retry-After", "")
+            delay = float(retry_after) if retry_after.isdigit() else 1.5 * (attempt + 1)
+        except Exception as e:
+            error = str(e)
+            delay = 1.0
+        if attempt < MAX_ATTEMPTS - 1:
+            time.sleep(min(delay, 5))
+    return page_num, None, error
 
 def fetch_all_pages_concurrently(field_key=DEFAULT_FIELD, timeout=8):
     """
@@ -36,7 +50,7 @@ def fetch_all_pages_concurrently(field_key=DEFAULT_FIELD, timeout=8):
     # Use a persistent session with connection pooling for maximum speed (< 300ms)
     with requests.Session() as session:
         session.headers.update(HEADERS)
-        with ThreadPoolExecutor(max_workers=min(field["pages"], 8)) as executor:
+        with ThreadPoolExecutor(max_workers=min(field["pages"], 4)) as executor:
             future_to_page = {
                 executor.submit(fetch_single_page, page, field["categoryId"], session, timeout): page
                 for page in range(1, field["pages"] + 1)

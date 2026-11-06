@@ -29,6 +29,19 @@ FIELDS = {
         # ~390 projects per snapshot: keep fewer to hold the state file near 2.5 MB
         "snapshotMax": 300,
     },
+    "KHGD": {
+        "key": "KHGD",
+        "name": "Khoa học Giáo dục",
+        "shortName": "Giáo dục",
+        "categoryId": 5,
+        "pages": 8,
+        "defaultTeam": "KHGD2026-017",
+        "portalSlug": "KHGD",
+        "stateSuffix": "_khgd",
+        "redisPrefix": "eureka_khgd",
+        # ~170 projects per snapshot
+        "snapshotMax": 600,
+    },
 }
 
 DEFAULT_FIELD = "KHNN"

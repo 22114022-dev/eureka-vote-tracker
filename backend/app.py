@@ -26,7 +26,9 @@ def health():
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    payload = get_storage(request.args.get("field")).get_dashboard_payload(request.args.get("team"))
+    store = get_storage(request.args.get("field"))
+    store.touch()
+    payload = store.get_dashboard_payload(request.args.get("team"))
     payload["nextScrapeIn"] = get_next_run_seconds()
     return jsonify(payload)
 

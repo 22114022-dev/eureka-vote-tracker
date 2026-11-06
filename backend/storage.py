@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import threading
 from datetime import datetime, timedelta, timezone
 from initial_data import get_initial_dataset
 from fetcher import fetch_all_pages_concurrently
@@ -12,6 +13,12 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 # A snapshot is only stored when votes changed, or as a heartbeat so that an
 # unchanged stretch still has a recent baseline.
 SNAPSHOT_HEARTBEAT_S = 600
+
+# A field nobody is looking at syncs rarely, to spare the official API (it answers 429 under bursts)
+ACTIVE_WINDOW_S = 600
+IDLE_SYNC_S = 300
+# A viewer opening a field whose data is older than this triggers a sync right away
+STALE_AFTER_S = 150
 
 # `team` value that turns off the home team (neutral viewing mode)
 NEUTRAL_TEAM = "NONE"
@@ -43,6 +50,9 @@ class Storage:
         self.redis_prefix = self.field["redisPrefix"]
         self.default_team = self.field["defaultTeam"]
         self.redis_client = None
+        self.last_viewed = 0.0
+        self.last_sync_ts = 0.0
+        self._sync_lock = threading.Lock()
         self._init_redis()
         self.projects = []
         self.history = []
@@ -217,7 +227,18 @@ class Storage:
                 return self.snapshots[i]["votes"]
         return self.snapshots[start]["votes"]
 
+    def touch(self):
+        """Mark the field as being viewed; refresh it in the background when it has gone stale."""
+        self.last_viewed = time.time()
+        if time.time() - self.last_sync_ts > STALE_AFTER_S and not self._sync_lock.locked():
+            threading.Thread(target=self.sync_live_data, daemon=True).start()
+
     def sync_live_data(self):
+        with self._sync_lock:
+            self.last_sync_ts = time.time()
+            return self._sync()
+
+    def _sync(self):
         """
         Fetches live data concurrently from the field's official API pages,
         computes rank and vote deltas, and updates internal state.
@@ -410,7 +431,11 @@ class Storage:
             "status": self.last_scrape_status
         }
 
-storages = {key: Storage(key) for key in FIELDS}
+storages = {}
+for _key in FIELDS:
+    if storages:
+        time.sleep(2)  # space the first syncs out
+    storages[_key] = Storage(_key)
 storage = storages[DEFAULT_FIELD]
 
 
