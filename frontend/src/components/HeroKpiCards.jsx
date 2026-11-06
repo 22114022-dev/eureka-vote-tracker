@@ -6,7 +6,8 @@ export default function HeroKpiCards({
   gapTracker,
   velocity,
   overview,
-  theme
+  theme,
+  neutral = false
 }) {
   const isDark = theme === 'dark';
 
@@ -48,7 +49,7 @@ export default function HeroKpiCards({
               isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'
             }`}>
               <Trophy className="w-4 h-4 text-amber-500" />
-              <span>Vị trí Đội Nhà</span>
+              <span>{neutral ? 'Đề Tài Dẫn Đầu' : 'Vị trí Đội Nhà'}</span>
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-[#9333ea] text-white shadow-sm border border-teal-400/30">
               <span>HẠNG #{rank}</span>
@@ -124,7 +125,7 @@ export default function HeroKpiCards({
               ) : (
                 <ShieldCheck className="w-4 h-4" />
               )}
-              <span>{isTrailing ? 'Phiếu Cần Để Vượt Hạng' : 'Khoảng Cách An Toàn'}</span>
+              <span>{isTrailing ? 'Phiếu Cần Để Vượt Hạng' : neutral ? 'Cách Biệt Top 1 - Top 2' : 'Khoảng Cách An Toàn'}</span>
             </span>
 
             {/* Visual Warning Badge */}
@@ -187,7 +188,7 @@ export default function HeroKpiCards({
             </div>
           ) : (
             <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-[#475569]'} mt-2 truncate font-medium`}>
-              Đối thủ bám sát: <strong className={isDark ? 'text-blue-400' : 'text-blue-600'}>{nearest?.code || 'KHNN2026-054'}</strong> ({nearest?.votes?.toLocaleString('vi-VN')} phiếu)
+              {neutral ? 'Top 2' : 'Đối thủ bám sát'}: <strong className={isDark ? 'text-blue-400' : 'text-blue-600'}>{nearest?.code || 'KHNN2026-054'}</strong> ({nearest?.votes?.toLocaleString('vi-VN')} phiếu)
             </p>
           )}
         </div>

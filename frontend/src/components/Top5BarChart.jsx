@@ -46,7 +46,7 @@ const formatUpdated = (iso) => {
 
 const CHART_LABELS = { horizontal: 'Thanh ngang', vertical: 'Cột đứng', area: 'Miền' };
 
-export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCode }) {
+export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCode, neutral }) {
   const isDark = theme === 'dark';
   // 'horizontal' (Thanh ngang), 'vertical' (Cột đứng) or 'area' (Miền); phones default to columns
   const [chartType, setChartType] = useState(() =>
@@ -492,21 +492,23 @@ export default function Top5BarChart({ top5, theme, lastUpdated, history, teamCo
         <div>
           {/* Legend pills */}
           <div className="flex items-center gap-2.5 text-xs pb-3 shrink-0 flex-wrap">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border ${
-              isDark
-                ? 'bg-[#9333ea]/15 border-[#9333ea]/30'
-                : 'bg-teal-50 border-teal-200'
-            }`}>
-              <span className={`w-2.5 h-2.5 rounded-full ${isDark ? 'bg-[#e879f9]' : 'bg-[#9333ea]'}`}></span>
-              <span className={`font-bold ${isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}`}>{teamCode || 'KHNN2026-002'} (Đội nhà)</span>
-            </div>
+            {!neutral && (
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border ${
+                isDark
+                  ? 'bg-[#9333ea]/15 border-[#9333ea]/30'
+                  : 'bg-teal-50 border-teal-200'
+              }`}>
+                <span className={`w-2.5 h-2.5 rounded-full ${isDark ? 'bg-[#e879f9]' : 'bg-[#9333ea]'}`}></span>
+                <span className={`font-bold ${isDark ? 'text-[#e879f9]' : 'text-[#9333ea]'}`}>{teamCode} (Đội nhà)</span>
+              </div>
+            )}
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border ${
               isDark
                 ? 'bg-slate-800/50 border-slate-700/50 text-slate-400'
                 : 'bg-slate-100 border-[#E2E8F0] text-[#64748B]'
             }`}>
               <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br from-[#2dd4bf] to-[#6366f1]`}></span>
-              <span>Các đề tài còn lại</span>
+              <span>{neutral ? 'Các đề tài' : 'Các đề tài còn lại'}</span>
             </div>
           </div>
 

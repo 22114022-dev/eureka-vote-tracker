@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { X, Search, Star, RotateCcw } from 'lucide-react';
+import { X, Search, Star, RotateCcw, Eye } from 'lucide-react';
+import { NEUTRAL_TEAM } from '../fields';
 
 export default function TeamPickerModal({
   isOpen,
@@ -67,6 +68,29 @@ export default function TeamPickerModal({
             className="w-full bg-transparent outline-none text-sm placeholder:text-slate-500"
           />
         </div>
+
+        <button
+          type="button"
+          onClick={() => choose(NEUTRAL_TEAM)}
+          className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl border mb-2 transition-colors ${
+            team === NEUTRAL_TEAM
+              ? isDark
+                ? 'bg-[#9333ea]/20 border-[#9333ea]/60'
+                : 'bg-purple-50 border-[#9333ea]/50'
+              : isDark
+              ? 'bg-slate-800/40 border-slate-700/70 hover:bg-slate-800'
+              : 'bg-white border-[#E2E8F0] hover:bg-slate-50'
+          }`}
+        >
+          <Eye className={`w-4 h-4 shrink-0 ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-bold">Chế độ trung lập</span>
+            <span className={`block text-xs ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
+              Không chọn đội nhà, chỉ xem cuộc đua chung
+            </span>
+          </span>
+          {team === NEUTRAL_TEAM && <Star className="w-3.5 h-3.5 shrink-0 text-[#e879f9]" />}
+        </button>
 
         <div className="overflow-y-auto -mx-1 px-1 space-y-1.5 min-h-[120px]">
           {list.length === 0 && (

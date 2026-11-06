@@ -13,6 +13,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 # unchanged stretch still has a recent baseline.
 SNAPSHOT_HEARTBEAT_S = 600
 
+# `team` value that turns off the home team (neutral viewing mode)
+NEUTRAL_TEAM = "NONE"
+
 # Servers such as Render run in UTC; all stored times use Vietnam time (UTC+7)
 VN_TZ = timezone(timedelta(hours=7))
 # Voting deadline; set VOTING_END on the server if the organizers change it, empty hides the countdown
@@ -251,8 +254,18 @@ class Storage:
         self._save_state()
         return self.get_dashboard_payload()
 
+    @staticmethod
+    def is_neutral(team):
+        return (team or "").strip().upper() == NEUTRAL_TEAM
+
     def resolve_team(self, team):
-        """Valid project code for the requested home team, else the default."""
+        """Valid project code for the requested home team, else the default.
+
+        Neutral mode has no home team: the current leader stands in so the race
+        views (history, Top 1 vs Top 2) keep working.
+        """
+        if self.is_neutral(team) and self.projects:
+            return max(self.projects, key=lambda p: p["votes"])["code"]
         codes = {p["code"] for p in self.projects}
         team = (team or "").strip().upper()
         return team if team in codes else self.default_team
@@ -288,13 +301,14 @@ class Storage:
         return {k: f[k] for k in ("key", "name", "shortName", "defaultTeam", "pages", "portalSlug")}
 
     def get_dashboard_payload(self, team=None):
+        neutral = self.is_neutral(team)
         team = self.resolve_team(team)
         if not self.projects:
             return {"projects": [], "field": self._field_info(), "status": self.last_scrape_status}
         # Work on copies: the home team differs per viewer, shared state must stay untouched
         sorted_projects = sorted((dict(p) for p in self.projects), key=lambda x: x["votes"], reverse=True)
         for p in sorted_projects:
-            p["isTarget"] = (p["code"] == team)
+            p["isTarget"] = (not neutral and p["code"] == team)
 
         top1_votes = sorted_projects[0]["votes"] if sorted_projects else 0
         for i, p in enumerate(sorted_projects, start=1):
@@ -389,6 +403,7 @@ class Storage:
                 "targetVoteShare": round(target["votes"] / total_votes * 100, 2) if total_votes else 0
             },
             "field": self._field_info(),
+            "neutral": neutral,
             "lastUpdated": self.last_updated,
             "votingEnd": VOTING_END,
             "fetchDurationMs": self.last_fetch_duration_ms,

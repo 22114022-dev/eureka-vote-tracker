@@ -8,7 +8,7 @@ import HeadToHeadRadar from './components/HeadToHeadRadar';
 import LeaderboardTable from './components/LeaderboardTable';
 import TeamPickerModal from './components/TeamPickerModal';
 import FieldSwitch from './components/FieldSwitch';
-import { FIELDS, DEFAULT_FIELD } from './fields';
+import { FIELDS, DEFAULT_FIELD, NEUTRAL_TEAM } from './fields';
 
 const PORTAL_BASE = 'https://binhchon.khoahoctre.com.vn/c/eureka-2026';
 import { AlertTriangle, Bell, BellOff, Sprout } from 'lucide-react';
@@ -54,6 +54,7 @@ export default function App() {
   const field = FIELDS[fieldKey];
   const DEFAULT_TEAM = field.defaultTeam;
   const [team, setTeam] = useState(() => loadTeam(fieldKey));
+  const neutral = team === NEUTRAL_TEAM;
   // Ignore responses that arrive after the viewer switched to another field
   const fieldRef = useRef(fieldKey);
   fieldRef.current = fieldKey;
@@ -99,7 +100,7 @@ export default function App() {
       setErrorMsg('');
 
       // Play alert sound if gap is close (< 50)
-      if (data.gapTracker?.isClose && data.gapTracker?.isAhead) {
+      if (data.gapTracker?.isClose && data.gapTracker?.isAhead && !data.neutral) {
         playAlertSound();
       }
     } catch (err) {
@@ -250,7 +251,7 @@ export default function App() {
 
       <div className={`transition-[padding] duration-300 ${sidebarCollapsed ? '' : 'lg:pl-64'}`}>
       {/* Top Banner Alert when gap is under 50 */}
-      {dashboardData?.gapTracker?.isClose && dashboardData?.gapTracker?.isAhead && (
+      {dashboardData?.gapTracker?.isClose && dashboardData?.gapTracker?.isAhead && !dashboardData?.neutral && (
         <div className={`py-2.5 px-4 text-xs font-semibold flex items-center justify-between transition-colors border-b shadow-sm ${
           dashboardData.gapTracker.alertLevel === 'danger'
             ? 'bg-rose-600 text-white border-rose-700 animate-pulse'
@@ -286,6 +287,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         onOpenTeamPicker={() => setIsTeamPickerOpen(true)}
         teamCode={dashboardData?.targetProject?.code || team}
+        neutral={neutral}
         fieldKey={fieldKey}
         fieldName={field.name}
         gapTracker={dashboardData?.gapTracker}
@@ -344,6 +346,7 @@ export default function App() {
                 velocity={dashboardData?.velocity}
                 overview={dashboardData?.overview}
                 theme={theme}
+                neutral={neutral}
               />
             </section>
 
@@ -358,6 +361,7 @@ export default function App() {
                   lastUpdated={dashboardData?.lastUpdated}
                   history={history}
                   teamCode={dashboardData?.targetProject?.code}
+                  neutral={neutral}
                 />
               </div>
 
@@ -398,7 +402,7 @@ export default function App() {
         isOpen={isTeamPickerOpen}
         onClose={() => setIsTeamPickerOpen(false)}
         projects={dashboardData?.projects}
-        team={dashboardData?.targetProject?.code || team}
+        team={neutral ? NEUTRAL_TEAM : dashboardData?.targetProject?.code || team}
         defaultTeam={DEFAULT_TEAM}
         key={fieldKey}
         onSelect={handleSelectTeam}

@@ -19,3 +19,6 @@ export const FIELDS = {
 };
 
 export const DEFAULT_FIELD = 'KHNN';
+
+// Team value for neutral mode: no home team, just the overall race
+export const NEUTRAL_TEAM = 'NONE';

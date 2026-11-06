@@ -11,6 +11,7 @@ export default function Header({
   onToggleTheme,
   onOpenTeamPicker,
   teamCode,
+  neutral,
   fieldKey,
   fieldName,
   gapTracker,
@@ -123,7 +124,7 @@ export default function Header({
                   ? 'bg-[#9333ea]/15 hover:bg-[#9333ea]/25 text-[#e879f9] border-[#9333ea]/40'
                   : 'bg-teal-50 hover:bg-teal-100/80 text-[#9333ea] border-teal-200'
               }`}
-              title={`Đội nhà: ${teamCode || 'KHNN2026-002'}. Bấm để đổi`}
+              title={neutral ? 'Chế độ trung lập. Bấm để chọn đội nhà' : `Đội nhà: ${teamCode}. Bấm để đổi`}
             >
               <Flag className="w-3.5 h-3.5" />
             </button>
