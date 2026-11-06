@@ -99,7 +99,7 @@ export default function App() {
       setErrorMsg('');
 
       // Play alert sound if gap is close (< 50)
-      if (data.gapTracker?.isClose) {
+      if (data.gapTracker?.isClose && data.gapTracker?.isAhead) {
         playAlertSound();
       }
     } catch (err) {
@@ -250,7 +250,7 @@ export default function App() {
 
       <div className={`transition-[padding] duration-300 ${sidebarCollapsed ? '' : 'lg:pl-64'}`}>
       {/* Top Banner Alert when gap is under 50 */}
-      {dashboardData?.gapTracker?.isClose && (
+      {dashboardData?.gapTracker?.isClose && dashboardData?.gapTracker?.isAhead && (
         <div className={`py-2.5 px-4 text-xs font-semibold flex items-center justify-between transition-colors border-b shadow-sm ${
           dashboardData.gapTracker.alertLevel === 'danger'
             ? 'bg-rose-600 text-white border-rose-700 animate-pulse'

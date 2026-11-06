@@ -16,13 +16,18 @@ export default function HeroKpiCards({
   const isClose = gapTracker?.isClose ?? false;
   const nearest = gapTracker?.nearestCompetitor;
   const isAhead = gapTracker?.isAhead ?? true;
+  const above = gapTracker?.above;
+  const toAbove = gapTracker?.toAbove ?? 0;
+  const toTop1 = gapTracker?.toTop1 ?? 0;
+  // Behind the leader: show the votes needed to climb instead of a safety gap
+  const isTrailing = !isAhead && !!above;
 
   // Threshold logic:
   // gap >= 50: Safe (Green)
   // 25 <= gap < 50: Warning (Amber)
   // gap < 25 or trailing: Danger (Red/Rose)
-  const isDanger = Math.abs(gap) < 25;
-  const isWarning = isClose && !isDanger;
+  const isDanger = !isTrailing && Math.abs(gap) < 25;
+  const isWarning = isTrailing || (isClose && !isDanger);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-5 mb-6">
@@ -112,16 +117,26 @@ export default function HeroKpiCards({
                 ? isDark ? 'text-amber-400' : 'text-amber-700'
                 : isDark ? 'text-teal-400' : 'text-[#9333ea]'
             }`}>
-              {isDanger || isWarning ? (
+              {isTrailing ? (
+                <TrendingUp className="w-4 h-4" />
+              ) : isDanger || isWarning ? (
                 <AlertTriangle className="w-4 h-4 animate-bounce" />
               ) : (
                 <ShieldCheck className="w-4 h-4" />
               )}
-              <span>Khoảng Cách An Toàn</span>
+              <span>{isTrailing ? 'Phiếu Cần Để Vượt Hạng' : 'Khoảng Cách An Toàn'}</span>
             </span>
 
             {/* Visual Warning Badge */}
-            {isClose ? (
+            {isTrailing ? (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-bold border ${
+                isDark
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                  : 'bg-amber-100 text-amber-800 border-amber-200'
+              }`}>
+                Đang đuổi
+              </span>
+            ) : isClose ? (
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-bold animate-pulse border ${
                 isDanger
                   ? isDark
@@ -152,16 +167,29 @@ export default function HeroKpiCards({
                 ? isDark ? 'text-amber-400' : 'text-amber-600'
                 : isDark ? 'text-teal-400' : 'text-[#9333ea]'
             }`}>
-              {isAhead ? `+${gap}` : `${gap}`}
+              {isTrailing ? `+${(toAbove + 1).toLocaleString('vi-VN')}` : isAhead ? `+${gap}` : `${gap}`}
             </span>
             <span className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
-              phiếu chênh lệch
+              {isTrailing ? `phiếu để vượt #${rank - 1}` : 'phiếu chênh lệch'}
             </span>
           </div>
 
-          <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-[#475569]'} mt-2 truncate font-medium`}>
-            Đối thủ bám sát: <strong className={isDark ? 'text-blue-400' : 'text-blue-600'}>{nearest?.code || 'KHNN2026-054'}</strong> ({nearest?.votes?.toLocaleString('vi-VN')} phiếu)
-          </p>
+          {isTrailing ? (
+            <div className={`text-xs ${isDark ? 'text-slate-300' : 'text-[#475569]'} mt-2 space-y-1 font-medium`}>
+              <p>
+                Vượt #{rank - 1} <strong className={isDark ? 'text-blue-400' : 'text-blue-600'}>{above.code}</strong> ({above.votes?.toLocaleString('vi-VN')} phiếu): kém {toAbove.toLocaleString('vi-VN')}
+              </p>
+              {rank > 2 && nearest && (
+                <p>
+                  Vượt Top 1 <strong className={isDark ? 'text-blue-400' : 'text-blue-600'}>{nearest.code}</strong> ({nearest.votes?.toLocaleString('vi-VN')} phiếu): cần <strong>+{(toTop1 + 1).toLocaleString('vi-VN')}</strong>
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-[#475569]'} mt-2 truncate font-medium`}>
+              Đối thủ bám sát: <strong className={isDark ? 'text-blue-400' : 'text-blue-600'}>{nearest?.code || 'KHNN2026-054'}</strong> ({nearest?.votes?.toLocaleString('vi-VN')} phiếu)
+            </p>
+          )}
         </div>
 
         {/* Dynamic Safety Threshold Meter */}
@@ -177,14 +205,25 @@ export default function HeroKpiCards({
                   ? 'bg-amber-500'
                   : isDark ? 'bg-teal-500' : 'bg-[#9333ea]'
               }`}
-              style={{ width: `${Math.min(100, Math.max(8, (Math.abs(gap) / 100) * 100))}%` }}
+              style={{
+                width: `${isTrailing
+                  ? Math.min(100, Math.max(8, (targetProject.votes / above.votes) * 100))
+                  : Math.min(100, Math.max(8, (Math.abs(gap) / 100) * 100))}%`
+              }}
             ></div>
           </div>
-          <div className={`flex justify-between text-[12px] mt-1.5 font-medium ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
-            <span className={isDanger ? (isDark ? 'text-red-400 font-bold' : 'text-rose-600 font-bold') : ''}>Nguy cấp (&lt;25)</span>
-            <span className={isWarning ? (isDark ? 'text-amber-400 font-bold' : 'text-amber-700 font-bold') : ''}>Cảnh báo (&lt;50)</span>
-            <span className={!isClose ? (isDark ? 'text-teal-400 font-bold' : 'text-[#9333ea] font-bold') : ''}>An toàn (&ge;50)</span>
-          </div>
+          {isTrailing ? (
+            <div className={`flex justify-between text-[12px] mt-1.5 font-medium ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
+              <span>Đội nhà #{rank}</span>
+              <span>Tiến gần #{rank - 1}: {Math.round((targetProject.votes / above.votes) * 100)}%</span>
+            </div>
+          ) : (
+            <div className={`flex justify-between text-[12px] mt-1.5 font-medium ${isDark ? 'text-slate-400' : 'text-[#64748B]'}`}>
+              <span className={isDanger ? (isDark ? 'text-red-400 font-bold' : 'text-rose-600 font-bold') : ''}>Nguy cấp (&lt;25)</span>
+              <span className={isWarning ? (isDark ? 'text-amber-400 font-bold' : 'text-amber-700 font-bold') : ''}>Cảnh báo (&lt;50)</span>
+              <span className={!isClose ? (isDark ? 'text-teal-400 font-bold' : 'text-[#9333ea] font-bold') : ''}>An toàn (&ge;50)</span>
+            </div>
+          )}
         </div>
       </div>
 

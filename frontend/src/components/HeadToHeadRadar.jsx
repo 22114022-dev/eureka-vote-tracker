@@ -58,7 +58,7 @@ export default function HeadToHeadRadar({
               ? 'bg-teal-500/15 text-teal-400 border-teal-500/40'
               : 'bg-teal-50 text-[#9333ea] border-teal-200'
           }`}>
-            {isCritical ? '🚨 Cực kỳ nguy cấp' : isWarning ? '⚠️ Tranh chấp gắt' : '✅ Vùng an toàn'}
+            {isCritical ? '🚨 Top 1 - Top 2 sát nút' : isWarning ? '⚠️ Top 1 - Top 2 tranh chấp' : '✅ Top 1 bỏ xa Top 2'}
           </span>
         </div>
 

@@ -187,15 +187,32 @@ class Storage:
         self.snapshots = self.snapshots[-self.field["snapshotMax"]:]
         self._snapshots_dirty = True
 
+    def _run_start(self):
+        """Index of the first snapshot of the current uninterrupted run.
+
+        While the server runs a snapshot is stored at least every SNAPSHOT_HEARTBEAT_S, so a
+        bigger gap means it was off (or asleep): votes gained meanwhile must not count as
+        recent velocity.
+        """
+        max_gap = SNAPSHOT_HEARTBEAT_S * 1.5
+        later = _parse_iso(self.snapshots[-1]["iso"])
+        for i in range(len(self.snapshots) - 1, 0, -1):
+            earlier = _parse_iso(self.snapshots[i - 1]["iso"])
+            if (later - earlier).total_seconds() > max_gap:
+                return i
+            later = earlier
+        return 0
+
     def _votes_at(self, seconds_ago):
-        """Votes per project as of `seconds_ago`, or the oldest snapshot if history is shorter."""
+        """Votes per project as of `seconds_ago`, or the start of the current run if it is shorter."""
         if not self.snapshots:
             return {}
+        start = self._run_start()
         cutoff = _now() - timedelta(seconds=seconds_ago)
-        for s in reversed(self.snapshots):
-            if _parse_iso(s["iso"]) <= cutoff:
-                return s["votes"]
-        return self.snapshots[0]["votes"]
+        for i in range(len(self.snapshots) - 1, start - 1, -1):
+            if _parse_iso(self.snapshots[i]["iso"]) <= cutoff:
+                return self.snapshots[i]["votes"]
+        return self.snapshots[start]["votes"]
 
     def sync_live_data(self):
         """
@@ -291,6 +308,7 @@ class Storage:
         target_rank = target["rank"]
 
         # Calculate Gap to nearest competitor
+        above = None
         if target_rank == 1:
             nearest = sorted_projects[1] if len(sorted_projects) > 1 else None
             gap = target["votes"] - nearest["votes"] if nearest else 0
@@ -299,6 +317,7 @@ class Storage:
             nearest = sorted_projects[0]  # The leader ahead
             gap = target["votes"] - nearest["votes"]  # negative value
             is_ahead = False
+            above = sorted_projects[target_rank - 2]  # project directly ahead of the target
 
         is_close = abs(gap) < 50
 
@@ -337,6 +356,10 @@ class Storage:
                 "isClose": is_close,
                 "isAhead": is_ahead,
                 "nearestCompetitor": nearest,
+                "above": above,
+                # Votes the target is short of the project above / the leader (0 when already ahead)
+                "toAbove": above["votes"] - target["votes"] if above else 0,
+                "toTop1": nearest["votes"] - target["votes"] if not is_ahead else 0,
                 "statusBadge": (
                     "Đang bám đuổi rất sát!" if is_close
                     else "Safe" if is_ahead
