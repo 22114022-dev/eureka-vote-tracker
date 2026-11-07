@@ -121,10 +121,10 @@ export default function App() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-  // Refresh vote history whenever the dashboard data changes
-  const lastUpdated = dashboardData?.lastUpdated;
+  // Refresh vote history only when some vote count changed (saves bandwidth on quiet minutes)
+  const voteSignature = dashboardData?.projects?.map((p) => p.votes).join(',');
   useEffect(() => {
-    if (!lastUpdated) return;
+    if (!voteSignature) return;
     const requestedField = fieldKey;
     fetch(`/api/history?field=${requestedField}&team=${encodeURIComponent(team)}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
@@ -132,7 +132,7 @@ export default function App() {
         if (fieldRef.current === requestedField) setHistory(json.history || []);
       })
       .catch((err) => console.error('History fetch error:', err));
-  }, [lastUpdated, team, fieldKey]);
+  }, [voteSignature, team, fieldKey]);
 
   // Expose the sticky header height so the pinned KPI row can sit right below it
   useEffect(() => {
@@ -172,9 +172,10 @@ export default function App() {
     }
   }, [theme]);
 
-  // 1-second countdown timer interval
+  // 1-second countdown timer interval; paused while the tab is hidden to save bandwidth
   useEffect(() => {
     const timer = setInterval(() => {
+      if (document.hidden) return;
       setCountdown((prev) => {
         if (prev <= 1) {
           fetchDashboard(false);
@@ -184,7 +185,16 @@ export default function App() {
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    // Coming back to the tab shows fresh numbers right away
+    const onVisible = () => {
+      if (!document.hidden) fetchDashboard(false);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [fetchDashboard]);
 
   const handleSelectField = (key) => {

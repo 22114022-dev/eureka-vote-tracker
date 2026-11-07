@@ -2,6 +2,7 @@ import os
 import atexit
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from flask_compress import Compress
 from storage import get_storage
 from fields import FIELDS
 from scheduler import start_scheduler, stop_scheduler, get_next_run_seconds
@@ -10,6 +11,17 @@ DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fronte
 
 app = Flask(__name__, static_folder=DIST_DIR, static_url_path="")
 CORS(app)
+# Gzip API and static responses: Render's free plan caps monthly bandwidth
+Compress(app)
+
+@app.after_request
+def set_cache_headers(response):
+    # Vite puts a content hash in asset names, so they never change once served
+    if request.path.startswith("/assets/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif not request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 # Start background APScheduler (concurrent fetch every 60s)
 start_scheduler()
